@@ -1,10 +1,6 @@
 import express from "express";
-import {
-  register,
-  login,
-  requestPasswordReset,
-  resetPasswordHandler,
-} from "../controllers/authController";
+import { asyncHandler } from "../../../shared/utils/asyncHandler";
+import { authController } from "../controllers/authController";
 
 const router = express.Router();
 
@@ -47,7 +43,7 @@ const router = express.Router();
  *       400:
  *         description: Error de validación o usuario ya existente
  */
-router.post("/register", register);
+router.post("/register", asyncHandler(authController.register));
 
 /**
  * @swagger
@@ -74,16 +70,17 @@ router.post("/register", register);
  *       400:
  *         description: Error de autenticación
  */
-router.post("/login", login);
+router.post("/login", asyncHandler(authController.login));
 
+router.post("/refresh-token", authController.refreshToken);
 /**
  * @swagger
- * /auth/password-reset:
+ * /auth/forgot-password:
  *   post:
  *     tags:
  *       - Authentication
  *     summary: Solicita un restablecimiento de contraseña
- *     description: Envía un correo con un enlace para restablecer la contraseña.
+ *     description: Solicita un restablecimiento de contraseña para el usuario con correo.
  *     requestBody:
  *       required: true
  *       content:
@@ -95,20 +92,21 @@ router.post("/login", login);
  *                 type: string
  *     responses:
  *       200:
- *         description: Correo enviado para restablecer la contraseña
+ *         description: Restablecimiento de contraseña enviado con éxito
  *       400:
- *         description: Error al procesar la solicitud
+ *         description: Error de validación o usuario no encontrado
  */
-router.post("/password-reset", requestPasswordReset);
+router.post("/forgot-password", authController.forgotPassword);
 
+router.post("/reset-password", authController.resetPassword);
 /**
  * @swagger
- * /auth/reset-password:
+ * /auth/verify-token:
  *   post:
  *     tags:
  *       - Authentication
- *     summary: Restablece la contraseña
- *     description: Utiliza un token para restablecer la contraseña del usuario.
+ *     summary: Verifica el token de activación de cuenta
+ *     description: Verifica el token de activación de cuenta para activar un usuario.
  *     requestBody:
  *       required: true
  *       content:
@@ -118,14 +116,12 @@ router.post("/password-reset", requestPasswordReset);
  *             properties:
  *               token:
  *                 type: string
- *               newPassword:
- *                 type: string
  *     responses:
  *       200:
- *         description: Contraseña restablecida con éxito
+ *         description: Usuario activado con éxito
  *       400:
  *         description: Token inválido o expirado
  */
-router.post("/reset-password", resetPasswordHandler);
+router.post("/verify-token", authController.verifyToken);
 
 export default router;

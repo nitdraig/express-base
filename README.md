@@ -53,14 +53,14 @@ my-express-base/
 ### **2. Clonar el repositorio**
 
 ```bash
-git clone https://github.com/tu-usuario/my-express-base.git
-cd my-express-base
+git clone https://github.com/nitdraig/express-base.git
+cd express-base
 ```
 
 ### **3. Instalar dependencias**
 
 ```bash
-pnpm install
+pnpm install or npm install
 ```
 
 ### **4. Configurar variables de entorno**
@@ -76,7 +76,7 @@ JWT_SECRET=supersecretkey
 ### **5. Iniciar el servidor**
 
 ```bash
-pnpm dev
+pnpm run dev or npm run dev
 ```
 
 El servidor estará disponible en `http://localhost:5000`.
@@ -87,7 +87,7 @@ El servidor estará disponible en `http://localhost:5000`.
 
 ### **Desarrollo**
 
-- `pnpm dev`: Inicia el servidor en modo de desarrollo con reinicio automático.
+- `pnpm run dev or npm run dev`: Inicia el servidor en modo de desarrollo con reinicio automático.
 
 ### **Producción**
 
