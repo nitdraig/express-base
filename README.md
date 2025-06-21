@@ -195,4 +195,27 @@ Si deseas contribuir, por favor:
 
 ---
 
+# Generate a JWT Secret Key
+
+To generate a random JWT secret key, you can use a tool like Node.js to create a random string. Here's a simple example:
+
+- Open your terminal or command prompt.
+- Run the following Node.js script to generate a random string:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+```
+
+- This command uses the crypto module in Node.js to generate a random sequence of 32 bytes and then converts it to a hexadecimal string.
+- Copy the generated string.
+- Open your .env file and set the JWT secret key:
+- JWT_SECRET=paste-the-generated-string-here
+- Replace paste-the-generated-string-here with the string you copied.
+- Save the changes to your .env file.
+
+Now, you have a securely generated JWT secret key. Remember to keep this key confidential and don't share it publicly. If needed, you can regenerate the key and update it in your .env file.
+
+---
+
 ¡Gracias por usar este proyecto base! Si tienes preguntas o sugerencias, no dudes en abrir un issue.
