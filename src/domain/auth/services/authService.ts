@@ -1,50 +1,25 @@
-// src/domain/auth/services/authService.ts
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { User } from "../../users/models/userModel";
 import { sendEmail } from "./emailService";
-import { emailContent, emailResetContent } from "./emailContent/emailContent";
 import dotenv from "dotenv";
 import { AppError } from "../../../shared/errors/appError";
+import { User } from "../../users/models/userModel";
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
-const API = process.env.API_URL || "http://localhost:3000";
-
-export const registerUser = async (
-  email: string,
-  password: string,
-  role: "user" | "admin"
-) => {
-  const existingUser = await User.findOne({ email });
-  if (existingUser) {
-    throw new Error("User already exists");
-  }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  const activationToken = jwt.sign({ email }, JWT_SECRET, {
-    expiresIn: "1d",
-  });
-
-  const newUser = new User({
-    email,
-    password: hashedPassword,
-    role,
-    isActive: false,
-    activationToken,
-  });
-
-  await newUser.save();
-
-  const activationLink = `${API}/auth/activate-account?token=${activationToken}`;
-  const htmlContent = emailContent(email, activationLink);
-  await sendEmail(email, "Activa tu cuenta en Sigii", htmlContent);
-
-  return newUser;
-};
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
+const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || "7d";
+interface TokenPayload {
+  id: string;
+  email: string;
+  role: string;
+  firstName?: string;
+  lastName?: string;
+}
 export const loginUser = async (email: string, password: string) => {
   const user = await User.findOne({ email });
+
   if (!user) {
     throw new AppError(
       "Usuario no encontrado. Contacte con el administrador.",
@@ -73,62 +48,42 @@ export const loginUser = async (email: string, password: string) => {
   const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
   return token;
 };
-export const verifyActivationToken = async (token: string) => {
+
+export const refreshAccessToken = async (
+  refreshToken: string
+): Promise<string> => {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { email: string };
+    const decoded = jwt.verify(refreshToken, JWT_SECRET) as TokenPayload;
 
-    if (!decoded.email) {
-      throw new Error("Token inválido: falta email");
-    }
-
-    const updatedUser = await User.findOneAndUpdate(
-      { email: decoded.email },
-      { $set: { isActive: true } },
-      { new: true }
-    );
-
-    if (!updatedUser) {
-      throw new Error("Usuario no encontrado");
-    }
-
-    return {
-      success: true,
-      user: {
-        id: updatedUser._id,
-        email: updatedUser.email,
-        isActive: updatedUser.isActive,
+    const newToken = jwt.sign(
+      {
+        id: decoded.id,
+        email: decoded.email,
+        role: decoded.role,
       },
-    };
+      JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+    return newToken;
   } catch (error) {
-    console.error("Error en verifyActivationToken:", error);
-    throw error;
+    throw new Error("Invalid refresh token");
   }
 };
+
 export const generateResetToken = async (email: string) => {
   const user = await User.findOne({ email });
   if (!user) throw new Error("Usuario no encontrado");
 
   const resetToken = jwt.sign({ id: user._id }, JWT_SECRET, {
-    expiresIn: "15m",
+    expiresIn: "6h",
   });
   user.resetPasswordToken = resetToken;
   user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
   await user.save();
   return resetToken;
 };
-export const requestPasswordReset = async (email: string) => {
-  const user = await User.findOne({ email });
-  if (!user) throw new Error("Usuario no encontrado");
 
-  const resetToken = jwt.sign({ id: user._id }, JWT_SECRET, {
-    expiresIn: "15m",
-  });
-  user.resetPasswordToken = resetToken;
-  user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
-  await user.save();
-  return resetToken;
-};
-export const resetPassword = async (token: string, newPassword: string) => {
+export const resetPassword = async (token: any, newPassword: string) => {
   const decoded: any = jwt.verify(token, JWT_SECRET);
   const user = await User.findById(decoded.id);
   if (!user || !user.resetPasswordExpires) {
@@ -147,10 +102,51 @@ export const resetPassword = async (token: string, newPassword: string) => {
 
   await user.save();
 };
-export const sendPasswordResetEmail = async (email: string, token: string) => {
-  const resetUrl = `${API}/auth/reset-password?token=${token}`;
 
-  const htmlContent = emailResetContent(resetUrl);
+export const verifyResetToken = (token: string): { email: string } => {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { email: string };
+    return decoded;
+  } catch (error) {
+    throw new Error("Invalid or expired token");
+  }
+};
+export const requestPasswordReset = async (email: string) => {
+  const user = await User.findOne({ email });
+  if (!user) return;
+
+  const resetToken = jwt.sign({ id: user._id }, JWT_SECRET, {
+    expiresIn: "15m",
+  });
+
+  user.resetPasswordToken = resetToken;
+  user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
+  await user.save();
+
+  await sendPasswordResetEmail(email, resetToken);
+};
+export const sendPasswordResetEmail = async (email: string, token: string) => {
+  const resetUrl = `${FRONTEND_URL}/auth/reset-password?token=${token}`;
+
+  const htmlContent = `
+     <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; padding: 20px;">
+      <h2 style="color: #b8860b;">🔑 Restablecimiento de contraseña</h2>
+           <p>Hola, Hemos recibido una solicitud para restablecer tu contraseña. Haz clic en el botón de abajo para continuar:</p>
+      <p>
+        <a 
+          href="${resetUrl}" 
+          style="display: inline-block; padding: 10px 20px; background-color: #b8860b; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;"
+        >
+          Restablecer contraseña
+        </a>
+      </p>
+      <p>Si no realizaste esta solicitud, puedes ignorar este mensaje de forma segura.</p>
+      <hr style="margin: 30px 0;">
+      <p style="font-size: 12px; color: #888;">
+        Este enlace expirará en 24 horas por motivos de seguridad.
+      </p>
+    </div>
+  `;
 
   await sendEmail(
     email,
@@ -158,11 +154,39 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
     htmlContent
   );
 };
-export const verifyResetToken = (token: string): { email: string } => {
+export const verifyActivationToken = async (token: string) => {
   try {
+    // 1. Verificar y decodificar el token
     const decoded = jwt.verify(token, JWT_SECRET) as { email: string };
-    return decoded;
+    console.log("Token decodificado:", decoded);
+
+    if (!decoded.email) {
+      throw new Error("Token inválido: falta email");
+    }
+
+    // 2. Buscar y actualizar el usuario en una sola operación
+    const updatedUser = await User.findOneAndUpdate(
+      { email: decoded.email },
+      { $set: { isActive: true } },
+      { new: true } // Retorna el documento actualizado
+    );
+
+    if (!updatedUser) {
+      throw new Error("Usuario no encontrado");
+    }
+
+    console.log("Usuario activado:", updatedUser); // Debug
+
+    return {
+      success: true,
+      user: {
+        id: updatedUser._id,
+        email: updatedUser.email,
+        isActive: updatedUser.isActive, // Debería ser true
+      },
+    };
   } catch (error) {
-    throw new Error("Invalid or expired token");
+    console.error("Error en verifyActivationToken:", error);
+    throw error;
   }
 };

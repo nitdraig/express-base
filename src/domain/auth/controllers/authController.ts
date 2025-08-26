@@ -1,13 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import {
   loginUser,
-  registerUser,
   requestPasswordReset,
   resetPassword,
   verifyActivationToken,
   verifyResetToken,
 } from "../services/authService";
-
 import jwt from "jsonwebtoken";
 import { AppError } from "../../../shared/errors/appError";
 import { User } from "../../users/models/userModel";
@@ -36,18 +34,7 @@ export const authController = {
       }
     }
   },
-  register: async (req: Request, res: Response) => {
-    const { email, password, role } = req.body;
 
-    try {
-      await registerUser(email, password, role);
-      res
-        .status(201)
-        .json({ success: true, message: "User registered successfully" });
-    } catch (error) {
-      res.status(400).json({ success: false, error: (error as Error).message });
-    }
-  },
   /**
    * Refresh del token de acceso (usando refresh token)
    */
@@ -58,26 +45,30 @@ export const authController = {
 
       if (!token) {
         res.status(400).json({ message: "Token is required" });
-        return;
+        return; // Agregar return para terminar la ejecución
       }
 
+      // Verificar y decodificar el token
       const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
         userId: string;
         email: string;
         role: string;
       };
 
+      // Buscar usuario en la base de datos
       const user = await User.findById(decoded.userId).select("-password");
       if (!user) {
         res.status(404).json({ message: "User not found" });
-        return;
+        return; // Agregar return para terminar la ejecución
       }
 
+      // Verificar si la cuenta está activa
       if (!user.isActive) {
         res.status(403).json({ message: "Account not activated" });
-        return;
+        return; // Agregar return para terminar la ejecución
       }
 
+      // Generar nuevo token
       const newToken = jwt.sign(
         {
           userId: user._id,
@@ -175,7 +166,7 @@ export const authController = {
 
       res.status(200).json(result);
     } catch (error) {
-      next(error);
+      next(error); // Pasa el error al middleware de errores
     }
   },
 };

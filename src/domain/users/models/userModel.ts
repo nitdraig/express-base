@@ -1,25 +1,32 @@
-import mongoose, { Schema, Document } from "mongoose";
+import { Schema, model, Document } from "mongoose";
 
 export interface IUser extends Document {
-  firstName: string;
-  lastName: string;
-  email: string;
+  role: "superAdmin" | "admin" | "student" | "teacher" | "tutor";
   password: string;
-  role: "admin" | "user";
+  email: string;
   isActive: boolean;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
+  activationToken?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-const userSchema = new Schema<IUser>({
-  firstName: { type: String, required: true },
-  lastName: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  isActive: { type: Boolean, default: false },
-  role: { type: String, enum: ["admin", "user"], default: "user" },
-  resetPasswordToken: String,
-  resetPasswordExpires: Date,
-});
+const UserSchema = new Schema<IUser>(
+  {
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    role: {
+      type: String,
+      enum: ["admin", "superAdmin", "teacher", "student", "tutor"],
+      required: true,
+    },
+    isActive: { type: Boolean, default: false },
+    activationToken: { type: String, default: null },
+    resetPasswordToken: { type: String, default: null },
+    resetPasswordExpires: { type: Date, default: null },
+  },
+  { timestamps: true }
+);
 
-export const User = mongoose.model<IUser>("User", userSchema);
+export const User = model<IUser>("User", UserSchema);
