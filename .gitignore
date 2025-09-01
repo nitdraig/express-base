@@ -16,6 +16,8 @@ pnpm-debug.log*
 dist/
 build/
 
+.husky/
+
 # Logs
 logs/
 *.log

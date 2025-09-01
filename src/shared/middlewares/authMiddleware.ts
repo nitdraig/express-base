@@ -1,7 +1,6 @@
 // middleware/auth.ts
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { JWT_SECRET } from "../utils/tokenUtils";
+import { verifyJWT } from "../utils/jwtUtils";
 
 declare global {
   namespace Express {
@@ -29,11 +28,7 @@ export const authenticate = (
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as {
-      id: string;
-      email: string;
-      role: string;
-    };
+    const decoded = verifyJWT(token);
 
     req.user = {
       id: decoded.id,
