@@ -49,15 +49,17 @@ export const authenticate = (
 
 export const authorize =
   (roles: string[]) =>
-  (req: Request, res: Response, next: NextFunction): any => {
+  (req: Request, res: Response, next: NextFunction): void => {
     const user = req.user;
 
     if (!user) {
-      return res.status(401).json({ message: "Unauthorized" });
+      res.status(401).json({ message: "Unauthorized" });
+      return;
     }
 
     if (!roles.includes(user.role)) {
-      return res.status(403).json({ message: "Forbidden" });
+      res.status(403).json({ message: "Forbidden" });
+      return;
     }
 
     next();

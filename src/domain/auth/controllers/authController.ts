@@ -9,28 +9,34 @@ import {
 import jwt from "jsonwebtoken";
 import { AppError } from "../../../shared/errors/appError";
 import { User } from "../../users/models/userModel";
+import { ENV } from "../../../shared/config/env";
 
 export const authController = {
   /**
    * Login de usuario
    */
-
   login: async (req: Request, res: Response): Promise<void> => {
     try {
       const { email, password } = req.body;
-      if (!email || !password) {
-        res.status(400).json({ error: "Email y contraseña son requeridos" });
-        return;
-      }
 
       const token = await loginUser(email, password);
-      res.status(200).json({ token });
+      res.status(200).json({
+        success: true,
+        token,
+        message: "Login exitoso",
+      });
     } catch (error: any) {
       if (error instanceof AppError) {
-        res.status(error.statusCode).json({ error: error.message });
+        res.status(error.statusCode).json({
+          success: false,
+          error: error.message,
+        });
       } else {
         console.error("Login error:", error);
-        res.status(500).json({ error: "Error interno del servidor" });
+        res.status(500).json({
+          success: false,
+          error: "Error interno del servidor",
+        });
       }
     }
   },
@@ -43,43 +49,45 @@ export const authController = {
     try {
       const { token } = req.body;
 
-      if (!token) {
-        res.status(400).json({ message: "Token is required" });
-        return; // Agregar return para terminar la ejecución
-      }
-
       // Verificar y decodificar el token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-        userId: string;
+      const decoded = jwt.verify(token, ENV.JWT_SECRET) as {
+        id: string;
         email: string;
         role: string;
       };
 
       // Buscar usuario en la base de datos
-      const user = await User.findById(decoded.userId).select("-password");
+      const user = await User.findById(decoded.id).select("-password");
       if (!user) {
-        res.status(404).json({ message: "User not found" });
-        return; // Agregar return para terminar la ejecución
+        res.status(404).json({
+          success: false,
+          message: "Usuario no encontrado",
+        });
+        return;
       }
 
       // Verificar si la cuenta está activa
       if (!user.isActive) {
-        res.status(403).json({ message: "Account not activated" });
-        return; // Agregar return para terminar la ejecución
+        res.status(403).json({
+          success: false,
+          message: "Cuenta no activada",
+        });
+        return;
       }
 
       // Generar nuevo token
       const newToken = jwt.sign(
         {
-          userId: user._id,
+          id: user._id,
           email: user.email,
           role: user.role,
         },
-        process.env.JWT_SECRET!,
+        ENV.JWT_SECRET,
         { expiresIn: "1h" }
       );
 
       res.json({
+        success: true,
         token: newToken,
         user: {
           id: user._id,
@@ -91,16 +99,25 @@ export const authController = {
       console.error("Refresh token error authController:", error);
 
       if (error instanceof jwt.TokenExpiredError) {
-        res.status(401).json({ message: "Token expired" });
+        res.status(401).json({
+          success: false,
+          message: "Token expirado",
+        });
         return;
       }
 
       if (error instanceof jwt.JsonWebTokenError) {
-        res.status(401).json({ message: "Invalid token" });
+        res.status(401).json({
+          success: false,
+          message: "Token inválido",
+        });
         return;
       }
 
-      res.status(500).json({ message: "Internal server error" });
+      res.status(500).json({
+        success: false,
+        message: "Error interno del servidor",
+      });
     }
   },
   /**
@@ -158,15 +175,34 @@ export const authController = {
     try {
       const { token } = req.body;
 
-      if (!token) {
-        throw new Error("Token no proporcionado");
-      }
-
       const result = await verifyActivationToken(token);
 
-      res.status(200).json(result);
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
     } catch (error) {
-      next(error); // Pasa el error al middleware de errores
+      next(error);
+    }
+  },
+
+  /**
+   * Logout de usuario
+   */
+  logout: async (req: Request, res: Response): Promise<void> => {
+    try {
+      // En una implementación más avanzada, aquí se invalidaría el token
+      // Por ahora, solo devolvemos éxito
+      res.status(200).json({
+        success: true,
+        message: "Logout exitoso",
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Error durante el logout",
+      });
     }
   },
 };

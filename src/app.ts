@@ -2,18 +2,24 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
+import compression from "compression";
 import { swaggerDocs } from "./shared/config/swagger";
 import { ENV } from "./shared/config/env";
 import { registerRoutes } from "./shared/config/routes";
-import { applySecurity } from "./shared/middlewares/segurity";
+import { applySecurity } from "./shared/middlewares/security";
 import { errorHandler } from "./shared/errors/errorHandler";
+import { requestLogger, logInfo } from "./shared/utils/logger";
+import { sanitizeInput } from "./shared/middlewares/validationMiddleware";
 
 const app = express();
 
 // Middlewares de seguridad (helmet, sanitize, rate-limit)
 applySecurity(app);
 
-// CORS
+// Compresión gzip
+app.use(compression());
+
+// CORS más restrictivo
 app.use(
   cors({
     origin: ENV.FRONTEND_ORIGIN,
@@ -21,13 +27,43 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization", "Accept"],
     exposedHeaders: ["Content-Disposition"],
     credentials: true,
+    maxAge: 86400, // 24 horas
   })
 );
 
-// Logs y body parsers
-app.use(morgan("dev"));
-app.use(express.json({ limit: "10kb" }));
-app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+// Sanitización de entrada
+app.use(sanitizeInput);
+
+// Logs estructurados
+app.use(requestLogger);
+
+// Logs de desarrollo
+if (ENV.NODE_ENV === "development") {
+  app.use(morgan("dev"));
+}
+
+// Body parsers con límites más estrictos
+app.use(
+  express.json({
+    limit: "10kb",
+    strict: true,
+    verify: (req, res, buf: any) => {
+      try {
+        JSON.parse(buf);
+      } catch (e) {
+        (res as any).status(400).json({ error: "Invalid JSON" } as any);
+        throw new Error("Invalid JSON");
+      }
+    },
+  })
+);
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "10kb",
+    parameterLimit: 10,
+  })
+);
 
 // Rutas principales
 registerRoutes(app);
@@ -64,6 +100,6 @@ app.use((req: any, res: any, next: any) => {
 });
 
 // Manejo global de errores
-app.use(errorHandler);
+app.use(errorHandler as any);
 
 export default app;

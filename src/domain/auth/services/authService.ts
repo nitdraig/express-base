@@ -6,10 +6,12 @@ import { AppError } from "../../../shared/errors/appError";
 import { User } from "../../users/models/userModel";
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
-const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || "7d";
+import { ENV } from "../../../shared/config/env";
+
+const JWT_SECRET = ENV.JWT_SECRET;
+const FRONTEND_URL = ENV.FRONTEND_ORIGIN;
+const JWT_EXPIRES_IN = ENV.JWT_EXPIRES_IN;
+const REFRESH_TOKEN_EXPIRES_IN = "7d";
 interface TokenPayload {
   id: string;
   email: string;
@@ -45,7 +47,7 @@ export const loginUser = async (email: string, password: string) => {
     role: user.role,
   };
 
-  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
   return token;
 };
 
