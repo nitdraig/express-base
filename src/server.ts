@@ -1,7 +1,9 @@
 import dotenv from "dotenv";
+import { createServer } from "http";
 import app from "./app";
 import mongoose from "mongoose";
 import { ENV } from "./shared/config/env";
+import { initializeSocket } from "./shared/config/socket";
 
 dotenv.config();
 
@@ -48,12 +50,19 @@ const startServer = async (): Promise<void> => {
   try {
     await connectDB();
 
-    app.listen(ENV.PORT, () => {
+    // Crear servidor HTTP
+    const httpServer = createServer(app);
+
+    // Inicializar Socket.io
+    initializeSocket(httpServer);
+
+    httpServer.listen(ENV.PORT, () => {
       console.log(`🚀 Server running on http://localhost:${ENV.PORT}`);
       console.log(`📚 Environment: ${ENV.NODE_ENV}`);
       console.log(
         `🔗 API Documentation: http://localhost:${ENV.PORT}/api-docs`
       );
+      console.log(`🔌 Socket.io initialized and ready`);
     });
   } catch (error) {
     console.error("Failed to start server:", error);

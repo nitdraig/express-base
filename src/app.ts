@@ -10,6 +10,7 @@ import { applySecurity } from "./shared/middlewares/security";
 import { errorHandler } from "./shared/errors/errorHandler";
 import { requestLogger, logInfo } from "./shared/utils/logger";
 import { sanitizeInput } from "./shared/middlewares/validationMiddleware";
+import passport from "./shared/config/passport";
 
 const app = express();
 
@@ -30,6 +31,9 @@ app.use(
     maxAge: 86400, // 24 horas
   })
 );
+
+// Inicializar Passport
+app.use(passport.initialize());
 
 // Sanitización de entrada
 app.use(sanitizeInput);

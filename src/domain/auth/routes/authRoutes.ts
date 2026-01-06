@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authController } from "../controllers/authController";
+import oauthRoutes from "./oauthRoutes";
 import { body } from "express-validator";
 import {
   validateRequest,
@@ -14,6 +15,9 @@ import {
 import { asyncHandler } from "../../../shared/utils/asyncHandler";
 
 const router = Router();
+
+// Rutas OAuth (deben ir antes de otras rutas para evitar conflictos)
+router.use("/oauth", oauthRoutes);
 
 // Login con validaciones mejoradas y rate limiting
 router.post(

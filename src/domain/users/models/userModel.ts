@@ -3,7 +3,7 @@ import { Schema, model, Document } from "mongoose";
 export interface IUser extends Document {
   name?: string;
   role: "superAdmin" | "admin" | "student" | "teacher" | "tutor";
-  password: string;
+  password?: string;
   email: string;
   isActive: boolean;
   isEmailVerified?: boolean;
@@ -17,7 +17,19 @@ export interface IUser extends Document {
   createdAt?: Date;
   updatedAt?: Date;
   // OAuth
+  oauthProvider?:
+    | "google"
+    | "facebook"
+    | "github"
+    | "twitter"
+    | "microsoft"
+    | "apple";
   googleId?: string;
+  facebookId?: string;
+  githubId?: string;
+  twitterId?: string;
+  microsoftId?: string;
+  appleId?: string;
   picture?: string;
   // Push Notifications
   pushSubscriptions?: Array<{
@@ -48,8 +60,20 @@ const UserSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: true,
+      required: false, // Se valida manualmente en pre-save
       minlength: [8, "La contraseña debe tener al menos 8 caracteres"],
+      validate: {
+        validator: function (this: IUser, value: string | undefined) {
+          // Si hay proveedor OAuth, el password no es requerido
+          if (this.oauthProvider) {
+            return true;
+          }
+          // Si no hay proveedor OAuth, el password es requerido
+          return value !== undefined && value !== null && value.length >= 8;
+        },
+        message:
+          "La contraseña es requerida para usuarios sin OAuth y debe tener al menos 8 caracteres",
+      },
     },
     role: {
       type: String,
@@ -67,7 +91,17 @@ const UserSchema = new Schema<IUser>(
     loginAttempts: { type: Number, default: 0 },
     lockUntil: { type: Date, default: null },
     // OAuth
+    oauthProvider: {
+      type: String,
+      enum: ["google", "facebook", "github", "twitter", "microsoft", "apple"],
+      sparse: true,
+    },
     googleId: { type: String, sparse: true },
+    facebookId: { type: String, sparse: true },
+    githubId: { type: String, sparse: true },
+    twitterId: { type: String, sparse: true },
+    microsoftId: { type: String, sparse: true },
+    appleId: { type: String, sparse: true },
     picture: { type: String },
     // Push Notifications
     pushSubscriptions: [
@@ -93,5 +127,20 @@ const UserSchema = new Schema<IUser>(
     },
   }
 );
+
+// Pre-save hook para validar password
+UserSchema.pre("save", function (next) {
+  // Si es un nuevo usuario sin OAuth, el password es requerido
+  if (!this.isNew || this.oauthProvider) {
+    return next();
+  }
+
+  // Si no hay password y no hay proveedor OAuth, es un error
+  if (!this.password && !this.oauthProvider) {
+    return next(new Error("Password es requerido para usuarios sin OAuth"));
+  }
+
+  next();
+});
 
 export const User = model<IUser>("User", UserSchema);

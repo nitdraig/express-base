@@ -165,44 +165,24 @@ export class GoogleOAuthService {
 
   // Crear o actualizar usuario desde Google
   async createOrUpdateUserFromGoogle(googleUser: GoogleUserInfo) {
-    try {
-      // Buscar usuario existente por email
-      let user = await User.findOne({ email: googleUser.email });
+    const { oauthService } = await import("./oauthService");
+    
+    const oauthUserInfo = {
+      id: googleUser.id,
+      email: googleUser.email,
+      name: googleUser.name,
+      picture: googleUser.picture,
+      firstName: googleUser.givenName,
+      lastName: googleUser.familyName,
+      verifiedEmail: googleUser.verifiedEmail,
+    };
 
-      if (user) {
-        // Actualizar información del usuario
-        user.name = googleUser.name;
-        user.picture = googleUser.picture;
-        user.googleId = googleUser.id;
-        user.isEmailVerified = googleUser.verifiedEmail;
-        user.lastLoginAt = new Date();
+    return oauthService.createOrUpdateUser("google", oauthUserInfo, "googleId");
+  }
 
-        await user.save();
-
-        logInfo("Usuario actualizado desde Google", { email: user.email });
-      } else {
-        // Crear nuevo usuario
-        user = new User({
-          email: googleUser.email,
-          name: googleUser.name,
-          picture: googleUser.picture,
-          googleId: googleUser.id,
-          isEmailVerified: googleUser.verifiedEmail,
-          isActive: true,
-          role: "user",
-          lastLoginAt: new Date(),
-        });
-
-        await user.save();
-
-        logInfo("Nuevo usuario creado desde Google", { email: user.email });
-      }
-
-      return user;
-    } catch (error) {
-      logError("Error creando/actualizando usuario desde Google:", error);
-      throw new Error("Error procesando usuario de Google");
-    }
+  // Alias para compatibilidad con el controlador unificado
+  async createOrUpdateUserFromProvider(googleUser: GoogleUserInfo) {
+    return this.createOrUpdateUserFromGoogle(googleUser);
   }
 
   // Verificar si el servicio está configurado
