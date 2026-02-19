@@ -1,7 +1,7 @@
 import { User, IUser } from "../../domain/users/models/userModel";
 import { logInfo, logError } from "../utils/logger";
 
-// Interfaz común para información de usuario OAuth
+// Common interface for OAuth user information
 export interface OAuthUserInfo {
   id: string;
   email: string;
@@ -14,10 +14,10 @@ export interface OAuthUserInfo {
 
 export type OAuthProvider = "google" | "facebook" | "github" | "twitter" | "microsoft" | "apple";
 
-// Servicio unificado para manejar usuarios OAuth
+// Unified service to handle OAuth users
 export class OAuthService {
   /**
-   * Crear o actualizar usuario desde información OAuth
+   * Create or update user from OAuth information
    */
   async createOrUpdateUser(
     provider: OAuthProvider,
@@ -25,7 +25,7 @@ export class OAuthService {
     providerIdField: keyof IUser
   ) {
     try {
-      // Buscar usuario existente por email o por ID del proveedor
+      // Find existing user by email or provider ID
       let user = await User.findOne({
         $or: [
           { email: oauthUser.email },
@@ -34,7 +34,7 @@ export class OAuthService {
       });
 
       if (user) {
-        // Actualizar información del usuario existente
+        // Update existing user information
         user.name = oauthUser.name || user.name;
         user.picture = oauthUser.picture || user.picture;
         user[providerIdField] = oauthUser.id as any;
@@ -42,19 +42,19 @@ export class OAuthService {
         user.isEmailVerified = oauthUser.verifiedEmail ?? user.isEmailVerified ?? false;
         user.lastLoginAt = new Date();
         
-        // Si el usuario no tenía password y ahora viene de OAuth, asegurar que no se requiera
+        // If user didn't have password and now comes from OAuth, ensure it's not required
         if (!user.password && provider) {
           // Ya está bien, el password es opcional para OAuth
         }
 
         await user.save();
 
-        logInfo(`Usuario actualizado desde ${provider}`, { 
+        logInfo(`User updated from ${provider}`, { 
           email: user.email,
           provider 
         });
       } else {
-        // Crear nuevo usuario
+        // Create new user
         const userData: any = {
           email: oauthUser.email,
           name: oauthUser.name,
@@ -62,15 +62,15 @@ export class OAuthService {
           [providerIdField]: oauthUser.id,
           oauthProvider: provider,
           isEmailVerified: oauthUser.verifiedEmail ?? false,
-          isActive: true, // Usuarios OAuth se activan automáticamente
-          role: "student", // Rol por defecto
+          isActive: true, // OAuth users are automatically activated
+          role: "student", // Default role
           lastLoginAt: new Date(),
         };
 
         user = new User(userData);
         await user.save();
 
-        logInfo(`Nuevo usuario creado desde ${provider}`, { 
+        logInfo(`New user created from ${provider}`, { 
           email: user.email,
           provider 
         });
@@ -78,9 +78,9 @@ export class OAuthService {
 
       return user;
     } catch (error: any) {
-      logError(`Error creando/actualizando usuario desde ${provider}:`, error);
+      logError(`Error creating/updating user from ${provider}:`, error);
       
-      // Si el error es por email duplicado, intentar buscar por proveedor
+      // If error is due to duplicate email, try to find by provider
       if (error.code === 11000 && error.keyPattern?.email) {
         const existingUser = await User.findOne({ 
           [providerIdField]: oauthUser.id 
@@ -90,12 +90,12 @@ export class OAuthService {
         }
       }
       
-      throw new Error(`Error procesando usuario de ${provider}`);
+      throw new Error(`Error processing user from ${provider}`);
     }
   }
 
   /**
-   * Desvincular cuenta OAuth de un usuario
+   * Unlink OAuth account from a user
    */
   async unlinkOAuthProvider(userId: string, provider: OAuthProvider) {
     try {
@@ -113,23 +113,23 @@ export class OAuthService {
       );
 
       if (!user) {
-        throw new Error("Usuario no encontrado");
+        throw new Error("User not found");
       }
 
-      logInfo(`Proveedor ${provider} desvinculado del usuario`, { 
+      logInfo(`Provider ${provider} unlinked from user`, { 
         userId,
         provider 
       });
 
       return user;
     } catch (error) {
-      logError(`Error desvinculando proveedor ${provider}:`, error);
+      logError(`Error unlinking provider ${provider}:`, error);
       throw error;
     }
   }
 
   /**
-   * Obtener el nombre del campo de ID según el proveedor
+   * Get ID field name according to provider
    */
   private getProviderIdField(provider: OAuthProvider): keyof IUser {
     const fieldMap: Record<OAuthProvider, keyof IUser> = {
@@ -144,6 +144,6 @@ export class OAuthService {
   }
 }
 
-// Instancia singleton
+// Singleton instance
 export const oauthService = new OAuthService();
 

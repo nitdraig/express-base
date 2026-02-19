@@ -1,71 +1,71 @@
 # Express TypeScript Starter Project
 
-Este repositorio proporciona una base sólida para desarrollar aplicaciones backend utilizando **Express.js** con **TypeScript**, siguiendo buenas prácticas de arquitectura y desarrollo moderno. El proyecto está diseñado para ser modular, seguro y escalable, incluyendo herramientas y patrones comunes que facilitan el desarrollo.
+This repository provides a solid foundation for building backend applications with **Express.js** and **TypeScript**, following modern architecture and development best practices. The project is designed to be modular, secure, and scalable, including common tools and patterns that facilitate development.
 
 ---
 
-## **Tabla de Contenidos**
+## **Table of Contents**
 
-- [Estructura del Proyecto](#estructura-del-proyecto)
-- [Instalación y Configuración](#instalación-y-configuración)
-- [Scripts Disponibles](#scripts-disponibles)
-- [Dependencias Principales](#dependencias-principales)
-- [Características del Proyecto](#características-del-proyecto)
-- [Guía de Uso](#guía-de-uso)
+- [Project Structure](#project-structure)
+- [Installation and Configuration](#installation-and-configuration)
+- [Available Scripts](#available-scripts)
+- [Main Dependencies](#main-dependencies)
+- [Project Features](#project-features)
+- [Usage Guide](#usage-guide)
 - [Roadmap](#roadmap)
-- [Contribución](#contribución)
+- [Contributing](#contributing)
 
 ---
 
-## **Estructura del Proyecto**
+## **Project Structure**
 
-La arquitectura está organizada en carpetas claras para separar la lógica de negocio, los recursos compartidos y las configuraciones generales:
+The architecture is organized into clear folders to separate business logic, shared resources, and global configuration:
 
 ```
 my-express-base/
 ├── src/
-│   ├── domain/            # Lógica de negocio dividida por características
+│   ├── domain/            # Business logic split by feature
 │   │   ├── [FeatureName]/
-│   │   │   ├── controllers/   # Controladores para rutas
-│   │   │   ├── services/      # Servicios de negocio
-│   │   │   ├── routes/        # Definición de rutas
-│   │   │   ├── models/        # Modelos de datos
-│   ├── shared/            # Recursos reutilizables
-│   │   ├── middlewares/   # Middlewares globales
-│   │   ├── utils/         # Utilidades comunes
-│   ├── app.ts             # Configuración principal de Express
-│   ├── server.ts          # Punto de entrada del servidor
-├── .env                   # Variables de entorno
-├── tsconfig.json          # Configuración de TypeScript
-├── package.json           # Dependencias y scripts
-├── README.md              # Documentación del proyecto
+│   │   │   ├── controllers/   # Route controllers
+│   │   │   ├── services/      # Business services
+│   │   │   ├── routes/        # Route definitions
+│   │   │   ├── models/        # Data models
+│   ├── shared/            # Reusable resources
+│   │   ├── middlewares/   # Global middlewares
+│   │   ├── utils/         # Common utilities
+│   ├── app.ts             # Main Express configuration
+│   ├── server.ts          # Server entry point
+├── .env                   # Environment variables
+├── tsconfig.json          # TypeScript configuration
+├── package.json           # Dependencies and scripts
+├── README.md              # Project documentation
 ```
 
 ---
 
-## **Instalación y Configuración**
+## **Installation and Configuration**
 
-### **1. Requisitos previos**
+### **1. Prerequisites**
 
 - Node.js (>= 18.x)
 - pnpm (>= 8.x)
 
-### **2. Clonar el repositorio**
+### **2. Clone the repository**
 
 ```bash
 git clone https://github.com/nitdraig/express-base.git
 cd express-base
 ```
 
-### **3. Instalar dependencias**
+### **3. Install dependencies**
 
 ```bash
 pnpm install or npm install
 ```
 
-### **4. Configurar variables de entorno**
+### **4. Configure environment variables**
 
-Renombra el archivo `.env.example` a `.env` y actualiza las variables según sea necesario:
+Rename `.env.example` to `.env` and update the variables as needed:
 
 ```env
 PORT=3000
@@ -73,88 +73,88 @@ DB_URI=mongodb://localhost:27017/mydatabase
 JWT_SECRET=supersecretkey
 ```
 
-### **5. Iniciar el servidor**
+### **5. Start the server**
 
 ```bash
 pnpm run dev or npm run dev
 ```
 
-El servidor estará disponible en `http://localhost:5000`.
+The server will be available at `http://localhost:5000`.
 
 ---
 
-## **Scripts Disponibles**
+## **Available Scripts**
 
-### **Desarrollo**
+### **Development**
 
-- `pnpm run dev or npm run dev`: Inicia el servidor en modo de desarrollo con reinicio automático.
+- `pnpm run dev or npm run dev`: Starts the server in development mode with automatic reload.
 
-### **Producción**
+### **Production**
 
-- `pnpm build`: Compila el proyecto TypeScript a JavaScript en la carpeta `dist/`.
-- `pnpm start`: Inicia el servidor con el código compilado.
+- `pnpm build`: Compiles the TypeScript project to JavaScript in the `dist/` folder.
+- `pnpm start`: Starts the server with the compiled code.
 
 ### **Testing**
 
-- `pnpm test`: Ejecuta las pruebas unitarias con Jest.
+- `pnpm test`: Runs unit tests with Jest.
 
 ---
 
-## **Dependencias Principales**
+## **Main Dependencies**
 
-### **Producción**:
+### **Production**:
 
-- **express**: Framework minimalista para aplicaciones web.
-- **cors**: Habilita solicitudes CORS.
-- **helmet**: Mejora la seguridad de la aplicación.
-- **dotenv**: Manejo de variables de entorno.
-- **mongoose**: ODM para MongoDB.
-- **jsonwebtoken**: Generación y validación de tokens JWT.
+- **express**: Minimalist web framework.
+- **cors**: Enables CORS requests.
+- **helmet**: Improves application security.
+- **dotenv**: Environment variable handling.
+- **mongoose**: ODM for MongoDB.
+- **jsonwebtoken**: JWT token generation and validation.
 
-### **Desarrollo**:
+### **Development**:
 
-- **typescript**: Soporte para TypeScript.
-- **ts-node-dev**: Reinicio automático del servidor en desarrollo.
-- **jest**: Framework de pruebas unitarias.
-- **@types/...**: Tipos necesarios para las bibliotecas.
-
----
-
-## **Características del Proyecto**
-
-### **1. Seguridad**
-
-- **Helmet**: Configurado para cabeceras HTTP seguras.
-- **CORS**: Permite solicitudes desde orígenes confiables.
-- **Protección JWT**: Middleware para autenticación.
-
-### **2. Validación**
-
-- **Joi**: Validación de datos de entrada.
-
-### **3. Manejo de Errores**
-
-- Middleware global para capturar y formatear errores.
-
-### **4. Arquitectura Modular**
-
-- Separación clara de responsabilidades por carpetas y dominios.
-
-### **5. Conexión con Bases de Datos**
-
-- Configuración lista para usar con MongoDB usando Mongoose.
-
-### **6. Documentación con Swagger**
-
-- Endpoints documentados con Swagger.
+- **typescript**: TypeScript support.
+- **ts-node-dev**: Automatic server reload in development.
+- **jest**: Unit testing framework.
+- **@types/...**: Type definitions for libraries.
 
 ---
 
-## **Guía de Uso**
+## **Project Features**
 
-### **1. Agregar una nueva característica**
+### **1. Security**
 
-Para agregar una nueva funcionalidad, crea un directorio dentro de `src/domain/[FeatureName]` con las subcarpetas necesarias:
+- **Helmet**: Configured for secure HTTP headers.
+- **CORS**: Allows requests from trusted origins.
+- **JWT Protection**: Middleware for authentication.
+
+### **2. Validation**
+
+- **Joi**: Input data validation.
+
+### **3. Error Handling**
+
+- Global middleware to catch and format errors.
+
+### **4. Modular Architecture**
+
+- Clear separation of concerns by folders and domains.
+
+### **5. Database Connection**
+
+- Ready-to-use configuration for MongoDB with Mongoose.
+
+### **6. Swagger Documentation**
+
+- Endpoints documented with Swagger.
+
+---
+
+## **Usage Guide**
+
+### **1. Adding a new feature**
+
+To add new functionality, create a directory under `src/domain/[FeatureName]` with the required subfolders:
 
 ```
 src/domain/MyFeature/
@@ -168,30 +168,30 @@ src/domain/MyFeature/
 
 ## **Roadmap**
 
-Algunas ideas para futuras mejoras:
+Some ideas for future improvements:
 
-- [ ] Integrar **Prisma** como alternativa a Mongoose.
-- [ ] Agregar soporte para WebSockets.
-- [ ] Configurar Docker para despliegue.
-- [ ] Implementar una capa de servicios para autorización basada en roles.
-- [ ] Configurar un sistema de cacheo con Redis.
+- [ ] Integrate **Prisma** as an alternative to Mongoose.
+- [ ] Add WebSockets support.
+- [ ] Configure Docker for deployment.
+- [ ] Implement a service layer for role-based authorization.
+- [ ] Set up a caching system with Redis.
 
 ---
 
-## **Contribución**
+## **Contributing**
 
-Si deseas contribuir, por favor:
+If you would like to contribute, please:
 
-1. Haz un fork del repositorio.
-2. Crea una nueva rama:
+1. Fork the repository.
+2. Create a new branch:
    ```bash
-   git checkout -b feature/nueva-funcionalidad
+   git checkout -b feature/my-new-feature
    ```
-3. Realiza tus cambios y haz un commit:
+3. Make your changes and commit:
    ```bash
-   git commit -m 'Agregada nueva funcionalidad X'
+   git commit -m 'Add new feature X'
    ```
-4. Envía un pull request.
+4. Submit a pull request.
 
 ---
 
@@ -218,4 +218,4 @@ Now, you have a securely generated JWT secret key. Remember to keep this key con
 
 ---
 
-¡Gracias por usar este proyecto base! Si tienes preguntas o sugerencias, no dudes en abrir un issue.
+Thank you for using this starter project! If you have questions or suggestions, feel free to open an issue.

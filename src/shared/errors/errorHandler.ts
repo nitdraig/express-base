@@ -7,10 +7,10 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ) {
-  // Log del error para debugging
+  // Log error for debugging
   console.error("Unhandled error:", err);
 
-  // En desarrollo, mostrar detalles del error
+  // In development, show error details
   if (ENV.NODE_ENV === "development") {
     return res.status(500).json({
       error: "Internal Server Error",
@@ -19,7 +19,7 @@ export function errorHandler(
     });
   }
 
-  // En producción, solo mensaje genérico
+  // In production, only generic message
   res.status(500).json({
     error: "Internal Server Error",
     message: "Something went wrong. Please try again later.",

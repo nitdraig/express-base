@@ -4,31 +4,31 @@ import { logInfo, logError } from "../utils/logger";
 import { User } from "../../domain/users/models/userModel";
 
 export class SocketService {
-  // Enviar mensaje a un usuario
+  // Send message to a user
   async sendMessage(message: Message): Promise<void> {
     try {
       const io = getIO();
 
-      // Emitir al destinatario
+      // Emit to recipient
       emitToUser(message.to, "message:received", message);
 
-      // Confirmar al remitente
+      // Confirm to sender
       if (message.from) {
         emitToUser(message.from, "message:sent", message);
       }
 
-      logInfo("Mensaje enviado via Socket.io", {
+      logInfo("Message sent via Socket.io", {
         from: message.from,
         to: message.to,
         type: message.type,
       });
     } catch (error) {
-      logError("Error enviando mensaje via Socket.io:", error);
+      logError("Error sending message via Socket.io:", error);
       throw error;
     }
   }
 
-  // Enviar mensaje a múltiples usuarios
+  // Send message to multiple users
   async sendMessageToMany(userIds: string[], message: Omit<Message, "to">): Promise<void> {
     try {
       userIds.forEach((userId) => {
@@ -38,18 +38,18 @@ export class SocketService {
         } as Message);
       });
 
-      logInfo("Mensaje enviado a múltiples usuarios via Socket.io", {
+      logInfo("Message sent to multiple users via Socket.io", {
         from: message.from,
         recipients: userIds.length,
         type: message.type,
       });
     } catch (error) {
-      logError("Error enviando mensaje a múltiples usuarios:", error);
+      logError("Error sending message to multiple users:", error);
       throw error;
     }
   }
 
-  // Enviar mensaje a una room
+  // Send message to a room
   async sendMessageToRoom(roomId: string, message: Omit<Message, "to">): Promise<void> {
     try {
       emitToRoom(roomId, "message:received", {
@@ -57,18 +57,18 @@ export class SocketService {
         to: roomId,
       } as Message);
 
-      logInfo("Mensaje enviado a room via Socket.io", {
+      logInfo("Message sent to room via Socket.io", {
         from: message.from,
         roomId,
         type: message.type,
       });
     } catch (error) {
-      logError("Error enviando mensaje a room:", error);
+      logError("Error sending message to room:", error);
       throw error;
     }
   }
 
-  // Marcar mensaje como leído
+  // Mark message as read
   async markMessageAsRead(messageId: string, readBy: string, recipientId: string): Promise<void> {
     try {
       emitToUser(recipientId, "message:read", {
@@ -76,18 +76,18 @@ export class SocketService {
         readBy,
       });
 
-      logInfo("Mensaje marcado como leído", {
+      logInfo("Message marked as read", {
         messageId,
         readBy,
         recipientId,
       });
     } catch (error) {
-      logError("Error marcando mensaje como leído:", error);
+      logError("Error marking message as read:", error);
       throw error;
     }
   }
 
-  // Notificar que un usuario está escribiendo
+  // Notify that a user is typing
   async notifyTyping(from: string, to: string, isTyping: boolean): Promise<void> {
     try {
       emitToUser(to, "message:typing", {
@@ -95,11 +95,11 @@ export class SocketService {
         isTyping,
       });
     } catch (error) {
-      logError("Error notificando typing:", error);
+      logError("Error notifying typing:", error);
     }
   }
 
-  // Actualizar presencia de usuario
+  // Update user presence
   async updatePresence(userId: string, status: "online" | "away" | "offline"): Promise<void> {
     try {
       broadcast("presence:update", {
@@ -107,16 +107,16 @@ export class SocketService {
         status,
       });
 
-      logInfo("Presencia actualizada", {
+      logInfo("Presence updated", {
         userId,
         status,
       });
     } catch (error) {
-      logError("Error actualizando presencia:", error);
+      logError("Error updating presence:", error);
     }
   }
 
-  // Enviar notificación
+  // Send notification
   async sendNotification(
     userId: string,
     type: string,
@@ -130,17 +130,17 @@ export class SocketService {
         data,
       });
 
-      logInfo("Notificación enviada via Socket.io", {
+      logInfo("Notification sent via Socket.io", {
         userId,
         type,
       });
     } catch (error) {
-      logError("Error enviando notificación:", error);
+      logError("Error sending notification:", error);
       throw error;
     }
   }
 
-  // Enviar notificación a múltiples usuarios
+  // Send notification to multiple users
   async sendNotificationToMany(
     userIds: string[],
     type: string,
@@ -154,34 +154,34 @@ export class SocketService {
         data,
       });
 
-      logInfo("Notificación enviada a múltiples usuarios", {
+      logInfo("Notification sent to multiple users", {
         recipients: userIds.length,
         type,
       });
     } catch (error) {
-      logError("Error enviando notificación a múltiples usuarios:", error);
+      logError("Error sending notification to multiple users:", error);
       throw error;
     }
   }
 
-  // Unir usuario a una room
+  // Join user to a room
   async joinRoom(userId: string, roomId: string): Promise<void> {
     try {
       const io = getIO();
       const user = await User.findById(userId).select("email role");
 
       if (!user) {
-        throw new Error("Usuario no encontrado");
+        throw new Error("User not found");
       }
 
-      // Obtener todos los sockets del usuario
+      // Get all user sockets
       const sockets = await io.in(`user:${userId}`).fetchSockets();
 
       sockets.forEach((socket) => {
         socket.join(roomId);
       });
 
-      // Notificar a la room
+      // Notify the room
       emitToRoom(roomId, "room:joined", {
         roomId,
         user: {
@@ -193,17 +193,17 @@ export class SocketService {
         },
       });
 
-      logInfo("Usuario unido a room", {
+      logInfo("User joined room", {
         userId,
         roomId,
       });
     } catch (error) {
-      logError("Error uniendo usuario a room:", error);
+      logError("Error joining user to room:", error);
       throw error;
     }
   }
 
-  // Sacar usuario de una room
+  // Remove user from a room
   async leaveRoom(userId: string, roomId: string): Promise<void> {
     try {
       const io = getIO();
@@ -218,17 +218,17 @@ export class SocketService {
         userId,
       });
 
-      logInfo("Usuario salió de room", {
+      logInfo("User left room", {
         userId,
         roomId,
       });
     } catch (error) {
-      logError("Error sacando usuario de room:", error);
+      logError("Error removing user from room:", error);
       throw error;
     }
   }
 
-  // Obtener usuarios conectados en una room
+  // Get connected users in a room
   async getRoomUsers(roomId: string): Promise<string[]> {
     try {
       const io = getIO();
@@ -244,12 +244,12 @@ export class SocketService {
 
       return Array.from(userIds);
     } catch (error) {
-      logError("Error obteniendo usuarios de room:", error);
+      logError("Error getting room users:", error);
       return [];
     }
   }
 }
 
-// Instancia singleton
+// Singleton instance
 export const socketService = new SocketService();
 

@@ -5,13 +5,13 @@ import { logInfo, logError } from "../../../shared/utils/logger";
 import { pushNotificationService } from "../../../shared/services/pushNotificationService";
 
 export const googleOAuthController = {
-  // Obtener URL de autorización
+  // Get authorization URL
   getAuthUrl: async (req: Request, res: Response) => {
     try {
       if (!googleOAuthService.isConfigured()) {
         return res.status(503).json({
           success: false,
-          error: "OAuth de Google no está configurado",
+          error: "Google OAuth is not configured",
         });
       }
 
@@ -26,21 +26,21 @@ export const googleOAuthController = {
         },
       });
     } catch (error) {
-      logError("Error generando URL de autorización de Google:", error);
+      logError("Error generating Google authorization URL:", error);
       res.status(500).json({
         success: false,
-        error: "Error generando URL de autorización",
+        error: "Error generating authorization URL",
       });
     }
   },
 
-  // Manejar callback de OAuth
+  // Handle OAuth callback
   handleCallback: async (req: Request, res: Response) => {
     try {
       const { code, state, error } = req.query;
 
       if (error) {
-        logError("Error en callback de OAuth:", { error, state });
+        logError("Error in OAuth callback:", { error, state });
         return res.redirect(
           `${process.env.FRONTEND_ORIGIN}/auth/error?error=${error}`
         );
@@ -52,12 +52,12 @@ export const googleOAuthController = {
         );
       }
 
-      // Intercambiar código por tokens
+      // Exchange code for tokens
       const tokens = await googleOAuthService.exchangeCodeForTokens(
         code as string
       );
 
-      // Obtener información del usuario
+      // Get user information
       const googleUser = await googleOAuthService.getUserInfo(
         tokens.accessToken
       );
@@ -73,7 +73,7 @@ export const googleOAuthController = {
         role: user.role,
       });
 
-      // Enviar notificación de bienvenida si es nuevo usuario
+      // Send welcome notification if new user
       if (user.pushSubscriptions && user.pushSubscriptions.length > 0) {
         try {
           const welcomeNotification =
@@ -86,28 +86,28 @@ export const googleOAuthController = {
             welcomeNotification
           );
         } catch (pushError) {
-          logError("Error enviando notificación de bienvenida:", pushError);
+          logError("Error sending welcome notification:", pushError);
         }
       }
 
-      logInfo("Usuario autenticado exitosamente con Google", {
+      logInfo("User authenticated successfully with Google", {
         email: user.email,
         userId: user._id as string,
       });
 
-      // Redirigir al frontend con el token
+      // Redirect to frontend with token
       res.redirect(
         `${process.env.FRONTEND_ORIGIN}/auth/success?token=${jwtToken}&state=${state || "default"}`
       );
     } catch (error) {
-      logError("Error en callback de OAuth de Google:", error);
+      logError("Error in Google OAuth callback:", error);
       res.redirect(
         `${process.env.FRONTEND_ORIGIN}/auth/error?error=auth_failed`
       );
     }
   },
 
-  // Verificar token ID (para autenticación desde frontend)
+  // Verify ID token (for frontend authentication)
   verifyIdToken: async (req: Request, res: Response) => {
     try {
       const { idToken } = req.body;
@@ -115,25 +115,25 @@ export const googleOAuthController = {
       if (!googleOAuthService.isConfigured()) {
         return res.status(503).json({
           success: false,
-          error: "OAuth de Google no está configurado",
+          error: "Google OAuth is not configured",
         });
       }
 
-      // Verificar token ID
+      // Verify ID token
       const googleUser = await googleOAuthService.verifyIdToken(idToken);
 
-      // Crear o actualizar usuario
+      // Create or update user
       const user =
         await googleOAuthService.createOrUpdateUserFromGoogle(googleUser);
 
-      // Generar JWT
+      // Generate JWT
       const jwtToken = generateJWT({
         id: user._id as string,
         email: user.email,
         role: user.role,
       });
 
-      logInfo("Usuario autenticado exitosamente con Google ID Token", {
+      logInfo("User authenticated successfully with Google ID Token", {
         email: user.email,
         userId: user._id,
       });
@@ -153,15 +153,15 @@ export const googleOAuthController = {
         },
       });
     } catch (error) {
-      logError("Error verificando token ID de Google:", error);
+      logError("Error verifying Google ID token:", error);
       res.status(401).json({
         success: false,
-        error: "Token ID de Google inválido",
+        error: "Invalid Google ID token",
       });
     }
   },
 
-  // Refrescar token de acceso
+  // Refresh access token
   refreshToken: async (req: Request, res: Response) => {
     try {
       const { refreshToken } = req.body;
@@ -169,7 +169,7 @@ export const googleOAuthController = {
       if (!googleOAuthService.isConfigured()) {
         return res.status(503).json({
           success: false,
-          error: "OAuth de Google no está configurado",
+          error: "Google OAuth is not configured",
         });
       }
 
@@ -186,15 +186,15 @@ export const googleOAuthController = {
         },
       });
     } catch (error) {
-      logError("Error refrescando token de Google:", error);
+      logError("Error refreshing Google token:", error);
       res.status(401).json({
         success: false,
-        error: "Error refrescando token de acceso",
+        error: "Error refreshing access token",
       });
     }
   },
 
-  // Revocar tokens
+  // Revoke tokens
   revokeTokens: async (req: Request, res: Response) => {
     try {
       const { accessToken } = req.body;
@@ -203,7 +203,7 @@ export const googleOAuthController = {
       if (!googleOAuthService.isConfigured()) {
         return res.status(503).json({
           success: false,
-          error: "OAuth de Google no está configurado",
+          error: "Google OAuth is not configured",
         });
       }
 
@@ -211,7 +211,7 @@ export const googleOAuthController = {
         await googleOAuthService.revokeTokens(accessToken);
       }
 
-      // Limpiar googleId del usuario
+      // Clear user's googleId
       if (user) {
         const { User } = await import("../../users/models/userModel");
         await User.findByIdAndUpdate(user.id, {
@@ -219,19 +219,19 @@ export const googleOAuthController = {
         });
       }
 
-      logInfo("Tokens de Google revocados exitosamente", {
+      logInfo("Google tokens revoked successfully", {
         userId: user?.id,
       });
 
       res.json({
         success: true,
-        message: "Tokens revocados exitosamente",
+        message: "Tokens revoked successfully",
       });
     } catch (error) {
-      logError("Error revocando tokens de Google:", error);
+      logError("Error revoking Google tokens:", error);
       res.status(500).json({
         success: false,
-        error: "Error revocando tokens",
+        error: "Error revoking tokens",
       });
     }
   },

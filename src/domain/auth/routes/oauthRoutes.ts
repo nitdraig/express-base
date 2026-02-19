@@ -7,10 +7,10 @@ import { body } from "express-validator";
 
 const router = Router();
 
-// Ruta para obtener proveedores disponibles
+// Route to get available providers
 router.get("/providers", passportOAuthController.getAvailableProviders);
 
-// Rutas OAuth con Passport.js (más simples y estándar)
+// OAuth routes with Passport.js (simpler and standard)
 router.get(
   "/google",
   passportOAuthController.authenticate("google")
@@ -41,12 +41,12 @@ router.get(
   ...passportOAuthController.handleCallback("github")
 );
 
-// Rutas específicas de Google (para compatibilidad y funcionalidades adicionales)
-// Estas rutas mantienen funcionalidades específicas como verifyIdToken
+// Google-specific routes (for compatibility and additional features)
+// These routes maintain specific features like verifyIdToken
 router.post(
   "/google/token",
   [
-    body("idToken").isString().notEmpty().withMessage("Token ID requerido"),
+    body("idToken").isString().notEmpty().withMessage("ID token required"),
     validateRequest,
   ],
   googleOAuthController.verifyIdToken
@@ -57,7 +57,7 @@ router.post(
     body("refreshToken")
       .isString()
       .notEmpty()
-      .withMessage("Refresh token requerido"),
+      .withMessage("Refresh token required"),
     validateRequest,
   ],
   googleOAuthController.refreshToken

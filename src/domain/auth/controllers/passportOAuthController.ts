@@ -4,28 +4,28 @@ import { generateJWT } from "../../../shared/utils/jwtUtils";
 import { logInfo, logError } from "../../../shared/utils/logger";
 import { pushNotificationService } from "../../../shared/services/pushNotificationService";
 
-// Función helper para manejar el callback después de la autenticación
+// Helper function to handle callback after authentication
 const handleOAuthCallback = (provider: string) => {
   return async (req: Request, res: Response) => {
     try {
-      // El usuario ya está autenticado por Passport, está en req.user
+      // User is already authenticated by Passport, it's in req.user
       const user = (req as any).user;
 
       if (!user) {
-        logError(`Usuario no encontrado en callback de ${provider}`);
+        logError(`User not found in ${provider} callback`);
         return res.redirect(
           `${process.env.FRONTEND_ORIGIN}/auth/error?error=user_not_found&provider=${provider}`
         );
       }
 
-      // Generar JWT
+      // Generate JWT
       const jwtToken = generateJWT({
         id: user._id as string,
         email: user.email,
         role: user.role,
       });
 
-      // Enviar notificación de bienvenida si es nuevo usuario
+      // Send welcome notification if new user
       if (user.pushSubscriptions && user.pushSubscriptions.length > 0) {
         try {
           const welcomeNotification =
@@ -38,23 +38,23 @@ const handleOAuthCallback = (provider: string) => {
             welcomeNotification
           );
         } catch (pushError) {
-          logError("Error enviando notificación de bienvenida:", pushError);
+          logError("Error sending welcome notification:", pushError);
         }
       }
 
-      logInfo(`Usuario autenticado exitosamente con ${provider}`, {
+      logInfo(`User authenticated successfully with ${provider}`, {
         email: user.email,
         userId: user._id as string,
         provider,
       });
 
-      // Redirigir al frontend con el token
+      // Redirect to frontend with token
       const state = (req.query.state as string) || "default";
       res.redirect(
         `${process.env.FRONTEND_ORIGIN}/auth/success?token=${jwtToken}&state=${state}&provider=${provider}`
       );
     } catch (error) {
-      logError(`Error procesando callback de ${provider}:`, error);
+      logError(`Error processing ${provider} callback:`, error);
       res.redirect(
         `${process.env.FRONTEND_ORIGIN}/auth/error?error=processing_error&provider=${provider}`
       );
@@ -63,15 +63,15 @@ const handleOAuthCallback = (provider: string) => {
 };
 
 export const passportOAuthController = {
-  // Iniciar autenticación OAuth
+  // Start OAuth authentication
   authenticate: (provider: string) => {
     return passport.authenticate(provider, {
       scope: provider === "github" ? ["user:email"] : ["profile", "email"],
-      session: false, // No usamos sesiones, usamos JWT
+      session: false, // We don't use sessions, we use JWT
     });
   },
 
-  // Callback de autenticación OAuth
+  // OAuth authentication callback
   handleCallback: (provider: string) => {
     return [
       passport.authenticate(provider, { session: false }),
@@ -79,7 +79,7 @@ export const passportOAuthController = {
     ];
   },
 
-  // Obtener proveedores disponibles
+  // Get available providers
   getAvailableProviders: async (req: Request, res: Response) => {
     try {
       const providers = [
@@ -111,12 +111,11 @@ export const passportOAuthController = {
         },
       });
     } catch (error) {
-      logError("Error obteniendo proveedores OAuth:", error);
+      logError("Error getting OAuth providers:", error);
       res.status(500).json({
         success: false,
-        error: "Error obteniendo proveedores OAuth",
+        error: "Error getting OAuth providers",
       });
     }
   },
 };
-

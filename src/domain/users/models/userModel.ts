@@ -55,24 +55,24 @@ const UserSchema = new Schema<IUser>(
       trim: true,
       match: [
         /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
-        "Por favor ingrese un email válido",
+        "Please enter a valid email",
       ],
     },
     password: {
       type: String,
       required: false, // Se valida manualmente en pre-save
-      minlength: [8, "La contraseña debe tener al menos 8 caracteres"],
+      minlength: [8, "Password must be at least 8 characters"],
       validate: {
         validator: function (this: IUser, value: string | undefined) {
-          // Si hay proveedor OAuth, el password no es requerido
+          // If there's an OAuth provider, password is not required
           if (this.oauthProvider) {
             return true;
           }
-          // Si no hay proveedor OAuth, el password es requerido
+          // If there's no OAuth provider, password is required
           return value !== undefined && value !== null && value.length >= 8;
         },
         message:
-          "La contraseña es requerida para usuarios sin OAuth y debe tener al menos 8 caracteres",
+          "Password is required for users without OAuth and must be at least 8 characters",
       },
     },
     role: {
@@ -128,16 +128,16 @@ const UserSchema = new Schema<IUser>(
   }
 );
 
-// Pre-save hook para validar password
+// Pre-save hook to validate password
 UserSchema.pre("save", function (next) {
-  // Si es un nuevo usuario sin OAuth, el password es requerido
+  // If it's a new user without OAuth, password is required
   if (!this.isNew || this.oauthProvider) {
     return next();
   }
 
-  // Si no hay password y no hay proveedor OAuth, es un error
+  // If there's no password and no OAuth provider, it's an error
   if (!this.password && !this.oauthProvider) {
-    return next(new Error("Password es requerido para usuarios sin OAuth"));
+    return next(new Error("Password is required for users without OAuth"));
   }
 
   next();

@@ -8,7 +8,7 @@ import { generateJWT } from "../utils/jwtUtils";
 import { logInfo, logError } from "../utils/logger";
 import { User } from "../../domain/users/models/userModel";
 
-// Serialización de usuario para sesiones (si las usas)
+// User serialization for sessions (if you use them)
 passport.serializeUser((user: any, done) => {
   done(null, user.id);
 });
@@ -22,7 +22,7 @@ passport.deserializeUser(async (id: string, done) => {
   }
 });
 
-// Estrategia de Google
+// Google strategy
 if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
   passport.use(
     new GoogleStrategy(
@@ -50,14 +50,14 @@ if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
             "googleId"
           );
 
-          logInfo("Usuario autenticado con Google via Passport", {
+          logInfo("User authenticated with Google via Passport", {
             email: user.email,
             userId: user._id,
           });
 
           return done(null, user);
         } catch (error) {
-          logError("Error en estrategia de Google:", error);
+          logError("Error in Google strategy:", error);
           return done(error, null);
         }
       }
@@ -65,7 +65,7 @@ if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
   );
 }
 
-// Estrategia de Facebook
+// Facebook strategy
 if (ENV.FACEBOOK_APP_ID && ENV.FACEBOOK_APP_SECRET) {
   passport.use(
     new FacebookStrategy(
@@ -93,14 +93,14 @@ if (ENV.FACEBOOK_APP_ID && ENV.FACEBOOK_APP_SECRET) {
             "facebookId"
           );
 
-          logInfo("Usuario autenticado con Facebook via Passport", {
+          logInfo("User authenticated with Facebook via Passport", {
             email: user.email,
             userId: user._id,
           });
 
           return done(null, user);
         } catch (error) {
-          logError("Error en estrategia de Facebook:", error);
+          logError("Error in Facebook strategy:", error);
           return done(error, null);
         }
       }
@@ -108,7 +108,7 @@ if (ENV.FACEBOOK_APP_ID && ENV.FACEBOOK_APP_SECRET) {
   );
 }
 
-// Estrategia de GitHub
+// GitHub strategy
 if (ENV.GITHUB_CLIENT_ID && ENV.GITHUB_CLIENT_SECRET) {
   passport.use(
     new GitHubStrategy(
@@ -120,12 +120,12 @@ if (ENV.GITHUB_CLIENT_ID && ENV.GITHUB_CLIENT_SECRET) {
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
-          // GitHub puede no proporcionar email en el perfil público
-          // Necesitamos obtenerlo de la API si no está disponible
+          // GitHub may not provide email in public profile
+          // We need to get it from the API if not available
           let email = profile.emails?.[0]?.value || "";
 
           if (!email) {
-            // Intentar obtener email de la API de GitHub usando fetch nativo
+            // Try to get email from GitHub API using native fetch
             try {
               const emailResponse = await fetch("https://api.github.com/user/emails", {
                 headers: {
@@ -142,7 +142,7 @@ if (ENV.GITHUB_CLIENT_ID && ENV.GITHUB_CLIENT_SECRET) {
                 email = `${profile.username}@users.noreply.github.com`;
               }
             } catch (emailError) {
-              logError("Error obteniendo email de GitHub:", emailError);
+              logError("Error getting email from GitHub:", emailError);
               email = `${profile.username}@users.noreply.github.com`;
             }
           }
@@ -161,14 +161,14 @@ if (ENV.GITHUB_CLIENT_ID && ENV.GITHUB_CLIENT_SECRET) {
             "githubId"
           );
 
-          logInfo("Usuario autenticado con GitHub via Passport", {
+          logInfo("User authenticated with GitHub via Passport", {
             email: user.email,
             userId: user._id,
           });
 
           return done(null, user);
         } catch (error) {
-          logError("Error en estrategia de GitHub:", error);
+          logError("Error in GitHub strategy:", error);
           return done(error, null);
         }
       }

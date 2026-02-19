@@ -3,7 +3,7 @@ import { ENV } from "../config/env";
 import { logInfo, logError } from "../utils/logger";
 import { User } from "../../domain/users/models/userModel";
 
-// Tipos para OAuth
+// Types for OAuth
 export interface GoogleUserInfo {
   id: string;
   email: string;
@@ -23,7 +23,7 @@ export interface OAuthTokens {
   expiryDate?: number;
 }
 
-// Servicio de OAuth de Google
+// Google OAuth service
 export class GoogleOAuthService {
   private oauth2Client: OAuth2Client;
 
@@ -35,7 +35,7 @@ export class GoogleOAuthService {
     );
   }
 
-  // Generar URL de autorización
+  // Generate authorization URL
   generateAuthUrl(state?: string): string {
     const scopes = [
       "https://www.googleapis.com/auth/userinfo.profile",
@@ -50,12 +50,12 @@ export class GoogleOAuthService {
     });
   }
 
-  // Intercambiar código por tokens
+  // Exchange code for tokens
   async exchangeCodeForTokens(code: string): Promise<OAuthTokens> {
     try {
       const { tokens }: any = await this.oauth2Client.getToken(code);
 
-      logInfo("Tokens de Google obtenidos exitosamente", {
+      logInfo("Google tokens obtained successfully", {
         hasAccessToken: !!tokens.accessToken,
         hasRefreshToken: !!tokens.refreshToken,
       });
@@ -68,12 +68,12 @@ export class GoogleOAuthService {
         expiryDate: tokens.expiryDate,
       };
     } catch (error) {
-      logError("Error intercambiando código por tokens:", error);
-      throw new Error("Error obteniendo tokens de Google");
+      logError("Error exchanging code for tokens:", error);
+      throw new Error("Error getting Google tokens");
     }
   }
 
-  // Obtener información del usuario
+  // Get user information
   async getUserInfo(accessToken: string): Promise<GoogleUserInfo> {
     try {
       this.oauth2Client.setCredentials({ access_token: accessToken });
@@ -85,19 +85,19 @@ export class GoogleOAuthService {
 
       const data = userInfo.data as GoogleUserInfo;
 
-      logInfo("Información de usuario de Google obtenida", {
+      logInfo("Google user information obtained", {
         email: data.email,
         name: data.name,
       });
 
       return data;
     } catch (error) {
-      logError("Error obteniendo información del usuario de Google:", error);
-      throw new Error("Error obteniendo información del usuario");
+      logError("Error getting Google user information:", error);
+      throw new Error("Error getting user information");
     }
   }
 
-  // Verificar token ID (para autenticación desde frontend)
+  // Verify ID token (for frontend authentication)
   async verifyIdToken(idToken: string): Promise<GoogleUserInfo> {
     try {
       const ticket = await this.oauth2Client.verifyIdToken({
@@ -118,26 +118,26 @@ export class GoogleOAuthService {
         verifiedEmail: payload.email_verified!,
       };
 
-      logInfo("Token ID de Google verificado exitosamente", {
+      logInfo("Google ID token verified successfully", {
         email: userInfo.email,
         name: userInfo.name,
       });
 
       return userInfo;
     } catch (error) {
-      logError("Error verificando token ID de Google:", error);
-      throw new Error("Token ID de Google inválido");
+      logError("Error verifying Google ID token:", error);
+      throw new Error("Invalid Google ID token");
     }
   }
 
-  // Refrescar token de acceso
+  // Refresh access token
   async refreshAccessToken(refreshToken: string): Promise<OAuthTokens> {
     try {
       this.oauth2Client.setCredentials({ refresh_token: refreshToken });
 
       const { credentials }: any = await this.oauth2Client.refreshAccessToken();
 
-      logInfo("Token de acceso refrescado exitosamente");
+      logInfo("Access token refreshed successfully");
 
       return {
         accessToken: credentials.accessToken!,
@@ -147,23 +147,23 @@ export class GoogleOAuthService {
         expiryDate: credentials.expiryDate as number,
       };
     } catch (error) {
-      logError("Error refrescando token de acceso:", error);
-      throw new Error("Error refrescando token de acceso");
+      logError("Error refreshing access token:", error);
+      throw new Error("Error refreshing access token");
     }
   }
 
-  // Revocar tokens
+  // Revoke tokens
   async revokeTokens(accessToken: string): Promise<void> {
     try {
       await this.oauth2Client.revokeToken(accessToken);
-      logInfo("Tokens de Google revocados exitosamente");
+      logInfo("Google tokens revoked successfully");
     } catch (error) {
-      logError("Error revocando tokens de Google:", error);
-      throw new Error("Error revocando tokens");
+      logError("Error revoking Google tokens:", error);
+      throw new Error("Error revoking tokens");
     }
   }
 
-  // Crear o actualizar usuario desde Google
+  // Create or update user from Google
   async createOrUpdateUserFromGoogle(googleUser: GoogleUserInfo) {
     const { oauthService } = await import("./oauthService");
     
@@ -180,16 +180,16 @@ export class GoogleOAuthService {
     return oauthService.createOrUpdateUser("google", oauthUserInfo, "googleId");
   }
 
-  // Alias para compatibilidad con el controlador unificado
+  // Alias for compatibility with unified controller
   async createOrUpdateUserFromProvider(googleUser: GoogleUserInfo) {
     return this.createOrUpdateUserFromGoogle(googleUser);
   }
 
-  // Verificar si el servicio está configurado
+  // Check if service is configured
   isConfigured(): boolean {
     return !!(ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET);
   }
 }
 
-// Instancia singleton
+// Singleton instance
 export const googleOAuthService = new GoogleOAuthService();

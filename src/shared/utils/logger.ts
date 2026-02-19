@@ -1,7 +1,7 @@
 import winston from "winston";
 import { ENV } from "../config/env";
 
-// Configuración de formatos
+// Format configuration
 const logFormat = winston.format.combine(
   winston.format.timestamp({
     format: "YYYY-MM-DD HH:mm:ss",
@@ -27,20 +27,20 @@ const consoleFormat = winston.format.combine(
   })
 );
 
-// Configuración del logger
+// Logger configuration
 const logger = winston.createLogger({
   level: ENV.NODE_ENV === "production" ? "info" : "debug",
   format: logFormat,
   defaultMeta: { service: "express-base-api" },
   transports: [
-    // Logs de error
+    // Error logs
     new winston.transports.File({
       filename: "logs/error.log",
       level: "error",
       maxsize: 5242880, // 5MB
       maxFiles: 5,
     }),
-    // Logs combinados
+    // Combined logs
     new winston.transports.File({
       filename: "logs/combined.log",
       maxsize: 5242880, // 5MB
@@ -49,7 +49,7 @@ const logger = winston.createLogger({
   ],
 });
 
-// Agregar transporte de consola solo en desarrollo
+// Add console transport only in development
 if (ENV.NODE_ENV !== "production") {
   logger.add(
     new winston.transports.Console({
@@ -58,7 +58,7 @@ if (ENV.NODE_ENV !== "production") {
   );
 }
 
-// Métodos de logging específicos
+// Specific logging methods
 export const logInfo = (message: string, meta?: any) => {
   logger.info(message, meta);
 };
@@ -79,7 +79,7 @@ export const logDebug = (message: string, meta?: any) => {
   logger.debug(message, meta);
 };
 
-// Middleware para logging de requests
+// Middleware for request logging
 export const requestLogger = (req: any, res: any, next: any) => {
   const start = Date.now();
 

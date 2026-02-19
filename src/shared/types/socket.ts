@@ -1,6 +1,6 @@
 import { Socket } from "socket.io";
 
-// Tipos para mensajes
+// Types for messages
 export interface Message {
   id?: string;
   from: string; // User ID

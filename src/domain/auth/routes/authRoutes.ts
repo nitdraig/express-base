@@ -16,17 +16,17 @@ import { asyncHandler } from "../../../shared/utils/asyncHandler";
 
 const router = Router();
 
-// Rutas OAuth (deben ir antes de otras rutas para evitar conflictos)
+// OAuth routes (must go before other routes to avoid conflicts)
 router.use("/oauth", oauthRoutes);
 
-// Login con validaciones mejoradas y rate limiting
+// Login with improved validations and rate limiting
 router.post(
   "/login",
   [
-    body("email").isEmail().normalizeEmail().withMessage("Email inválido"),
+    body("email").isEmail().normalizeEmail().withMessage("Invalid email"),
     body("password")
       .isLength({ min: 6 })
-      .withMessage("Contraseña debe tener al menos 6 caracteres"),
+      .withMessage("Password must be at least 6 characters"),
   ],
   validateRequest,
   checkAccountLock,
@@ -37,12 +37,12 @@ router.post(
 // Refresh token
 router.post(
   "/refresh-token",
-  [body("token").notEmpty().withMessage("Token es requerido")],
+  [body("token").notEmpty().withMessage("Token is required")],
   validateRequest,
   authController.refreshToken
 );
 
-// Solicitar reset de contraseña
+// Request password reset
 router.post(
   "/forgot-password",
   [body("email").isEmail().normalizeEmail().withMessage("Email inválido")],
@@ -50,29 +50,29 @@ router.post(
   authController.forgotPassword
 );
 
-// Reset de contraseña con validación
+// Reset password with validation
 router.post(
   "/reset-password",
   [
     body("token").notEmpty().withMessage("Token es requerido"),
     body("newPassword")
       .isLength({ min: 8 })
-      .withMessage("Nueva contraseña debe tener al menos 8 caracteres"),
+      .withMessage("New password must be at least 8 characters"),
   ],
   validateRequest,
   validatePasswordMiddleware,
   authController.resetPassword
 );
 
-// Verificar token de activación
+// Verify activation token
 router.post(
   "/verify-token",
-  [body("token").notEmpty().withMessage("Token es requerido")],
+  [body("token").notEmpty().withMessage("Token is required")],
   validateRequest,
   authController.verifyToken
 );
 
-// Logout (invalida token)
+// Logout (invalidates token)
 router.post("/logout", authenticate, authController.logout);
 
 export default router;
