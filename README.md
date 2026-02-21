@@ -114,7 +114,7 @@ The server will be available at `http://localhost:5000`.
 ### **Development**:
 
 - **typescript**: TypeScript support.
-- **ts-node-dev**: Automatic server reload in development.
+- **tsx**: Ejecución de TypeScript y recarga automática en desarrollo.
 - **jest**: Unit testing framework.
 - **@types/...**: Type definitions for libraries.
 

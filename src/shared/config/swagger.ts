@@ -1,13 +1,13 @@
 import swaggerJsdoc from "swagger-jsdoc";
 
 export const swaggerDocs = swaggerJsdoc({
-  swaggerDefinition: {
+  definition: {
     openapi: "3.0.0",
     info: {
-      title: "Sigii API Docs",
+      title: "Express Base API Docs",
       version: "1.0.0",
-      description: "Documentación oficial de la API de Sigii",
+      description: "Official documentation of the Express Base API",
     },
   },
-  apis: ["./src/**/*.ts"], // Asegúrate de ajustar este patrón
+  apis: ["./src/**/*.ts"],
 });
