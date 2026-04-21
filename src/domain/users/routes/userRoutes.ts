@@ -2,11 +2,11 @@ import express from "express";
 import { body } from "express-validator";
 import {
   changePassword,
+  deleteUser,
   getProfile,
   getUsersCount,
   updateProfile,
 } from "../controllers/userControllers";
-import { deleteUser } from "../services/userServices";
 import {
   authenticate,
   authorize,

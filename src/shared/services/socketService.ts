@@ -185,7 +185,7 @@ export class SocketService {
       emitToRoom(roomId, "room:joined", {
         roomId,
         user: {
-          userId: user._id.toString(),
+          userId: user.id,
           socketId: "",
           email: user.email,
           role: user.role,

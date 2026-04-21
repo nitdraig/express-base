@@ -91,4 +91,4 @@ export const ENV = {
     process.env.PULSE_COLLECTION_TIMEOUT_MS,
     300
   ),
-} as const;
+};

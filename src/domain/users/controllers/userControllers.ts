@@ -6,13 +6,26 @@ import {
   updateUserProfile,
   deleteUser as deleteUserService,
 } from "../services/userServices";
+import type { IUser } from "../models/userModel";
+
+function getMessageFromUnknown(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return fallback;
+}
 
 export const getProfile = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const userId = (req as any).user.id;
+    const authUser = req.user;
+    if (!authUser) {
+      res.status(401).json({ success: false, message: "No autenticado" });
+      return;
+    }
+    const userId = authUser.id;
     const user = await getUserProfile(userId);
 
     if (!user) {
@@ -49,17 +62,18 @@ export const updateProfile = async (
   res: Response
 ): Promise<void> => {
   try {
-    const userId = (req as any).user.id;
-    const updateData = req.body;
+    const authUser = req.user;
+    if (!authUser) {
+      res.status(401).json({ success: false, message: "No autenticado" });
+      return;
+    }
+    const userId = authUser.id;
+    const updateData = req.body as Record<string, unknown>;
 
-    // Solo permitir actualizar campos seguros
-    const allowedFields = ["email"];
-    const filteredData = Object.keys(updateData)
-      .filter((key) => allowedFields.includes(key))
-      .reduce((obj, key) => {
-        obj[key] = updateData[key];
-        return obj;
-      }, {} as any);
+    const filteredData: Partial<Pick<IUser, "email">> = {};
+    if (typeof updateData.email === "string") {
+      filteredData.email = updateData.email;
+    }
 
     const updatedUser = await updateUserProfile(userId, filteredData);
 
@@ -98,7 +112,12 @@ export const changePassword = async (
   res: Response
 ): Promise<void> => {
   try {
-    const userId = (req as any).user.id;
+    const authUser = req.user;
+    if (!authUser) {
+      res.status(401).json({ success: false, message: "No autenticado" });
+      return;
+    }
+    const userId = authUser.id;
     const { currentPassword, newPassword } = req.body;
 
     await changeUserPassword(userId, currentPassword, newPassword);
@@ -107,11 +126,14 @@ export const changePassword = async (
       success: true,
       message: "Contraseña cambiada exitosamente",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error changing password:", error);
 
-    const statusCode = error.message?.includes("incorrect") ? 400 : 500;
-    const message = error.message || "Error al cambiar la contraseña";
+    const message = getMessageFromUnknown(
+      error,
+      "Error al cambiar la contraseña"
+    );
+    const statusCode = message.includes("incorrect") ? 400 : 500;
 
     res.status(statusCode).json({
       success: false,
@@ -155,12 +177,12 @@ export const deleteUser = async (
       message: "Usuario eliminado exitosamente",
       user: deletedUser,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error deleting user:", error);
 
     res.status(500).json({
       success: false,
-      message: error.message || "Error al eliminar usuario",
+      message: getMessageFromUnknown(error, "Error al eliminar usuario"),
     });
   }
 };

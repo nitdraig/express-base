@@ -12,7 +12,59 @@ export interface OAuthUserInfo {
   verifiedEmail?: boolean;
 }
 
-export type OAuthProvider = "google" | "facebook" | "github" | "twitter" | "microsoft" | "apple";
+export type OAuthProvider =
+  | "google"
+  | "facebook"
+  | "github"
+  | "twitter"
+  | "microsoft"
+  | "apple";
+
+export type OAuthProviderIdField =
+  | "googleId"
+  | "facebookId"
+  | "githubId"
+  | "twitterId"
+  | "microsoftId"
+  | "appleId";
+
+function setProviderIdOnUser(
+  user: IUser,
+  field: OAuthProviderIdField,
+  id: string
+): void {
+  switch (field) {
+    case "googleId":
+      user.googleId = id;
+      return;
+    case "facebookId":
+      user.facebookId = id;
+      return;
+    case "githubId":
+      user.githubId = id;
+      return;
+    case "twitterId":
+      user.twitterId = id;
+      return;
+    case "microsoftId":
+      user.microsoftId = id;
+      return;
+    case "appleId":
+      user.appleId = id;
+      return;
+  }
+}
+
+function isMongoDuplicateKeyError(
+  error: unknown
+): error is { code: number; keyPattern?: { email?: boolean } } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: unknown }).code === 11000
+  );
+}
 
 // Unified service to handle OAuth users
 export class OAuthService {
@@ -22,74 +74,66 @@ export class OAuthService {
   async createOrUpdateUser(
     provider: OAuthProvider,
     oauthUser: OAuthUserInfo,
-    providerIdField: keyof IUser
-  ) {
+    providerIdField: OAuthProviderIdField
+  ): Promise<IUser> {
     try {
-      // Find existing user by email or provider ID
+      const providerFilter: Record<string, string> = {
+        [providerIdField]: oauthUser.id,
+      };
+
       let user = await User.findOne({
-        $or: [
-          { email: oauthUser.email },
-          { [providerIdField]: oauthUser.id },
-        ],
+        $or: [{ email: oauthUser.email }, providerFilter],
       });
 
       if (user) {
-        // Update existing user information
         user.name = oauthUser.name || user.name;
         user.picture = oauthUser.picture || user.picture;
-        user[providerIdField] = oauthUser.id as any;
+        setProviderIdOnUser(user, providerIdField, oauthUser.id);
         user.oauthProvider = provider;
-        user.isEmailVerified = oauthUser.verifiedEmail ?? user.isEmailVerified ?? false;
+        user.isEmailVerified =
+          oauthUser.verifiedEmail ?? user.isEmailVerified ?? false;
         user.lastLoginAt = new Date();
-        
-        // If user didn't have password and now comes from OAuth, ensure it's not required
-        if (!user.password && provider) {
-          // Ya está bien, el password es opcional para OAuth
-        }
 
         await user.save();
 
-        logInfo(`User updated from ${provider}`, { 
+        logInfo(`User updated from ${provider}`, {
           email: user.email,
-          provider 
+          provider,
         });
       } else {
-        // Create new user
-        const userData: any = {
+        const newUser = new User({
           email: oauthUser.email,
           name: oauthUser.name,
           picture: oauthUser.picture,
-          [providerIdField]: oauthUser.id,
           oauthProvider: provider,
           isEmailVerified: oauthUser.verifiedEmail ?? false,
-          isActive: true, // OAuth users are automatically activated
-          role: "student", // Default role
+          isActive: true,
+          role: "student",
           lastLoginAt: new Date(),
-        };
+        });
+        setProviderIdOnUser(newUser, providerIdField, oauthUser.id);
+        await newUser.save();
+        user = newUser;
 
-        user = new User(userData);
-        await user.save();
-
-        logInfo(`New user created from ${provider}`, { 
+        logInfo(`New user created from ${provider}`, {
           email: user.email,
-          provider 
+          provider,
         });
       }
 
       return user;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logError(`Error creating/updating user from ${provider}:`, error);
-      
-      // If error is due to duplicate email, try to find by provider
-      if (error.code === 11000 && error.keyPattern?.email) {
-        const existingUser = await User.findOne({ 
-          [providerIdField]: oauthUser.id 
+
+      if (isMongoDuplicateKeyError(error) && error.keyPattern?.email) {
+        const existingUser = await User.findOne({
+          [providerIdField]: oauthUser.id,
         });
         if (existingUser) {
           return existingUser;
         }
       }
-      
+
       throw new Error(`Error processing user from ${provider}`);
     }
   }
@@ -100,14 +144,11 @@ export class OAuthService {
   async unlinkOAuthProvider(userId: string, provider: OAuthProvider) {
     try {
       const providerIdField = this.getProviderIdField(provider);
-      
+
       const user = await User.findByIdAndUpdate(
         userId,
         {
-          $unset: { [providerIdField]: 1 },
-          $set: { 
-            oauthProvider: null,
-          },
+          $unset: { [providerIdField]: 1, oauthProvider: 1 },
         },
         { new: true }
       );
@@ -116,9 +157,9 @@ export class OAuthService {
         throw new Error("User not found");
       }
 
-      logInfo(`Provider ${provider} unlinked from user`, { 
+      logInfo(`Provider ${provider} unlinked from user`, {
         userId,
-        provider 
+        provider,
       });
 
       return user;
@@ -131,8 +172,8 @@ export class OAuthService {
   /**
    * Get ID field name according to provider
    */
-  private getProviderIdField(provider: OAuthProvider): keyof IUser {
-    const fieldMap: Record<OAuthProvider, keyof IUser> = {
+  private getProviderIdField(provider: OAuthProvider): OAuthProviderIdField {
+    const fieldMap: Record<OAuthProvider, OAuthProviderIdField> = {
       google: "googleId",
       facebook: "facebookId",
       github: "githubId",
@@ -146,4 +187,3 @@ export class OAuthService {
 
 // Singleton instance
 export const oauthService = new OAuthService();
-

@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import jwt, { type Secret, type SignOptions } from "jsonwebtoken";
 import { sendEmail } from "./emailService";
 import dotenv from "dotenv";
 import { AppError } from "../../../shared/errors/appError";
@@ -8,7 +8,7 @@ dotenv.config();
 
 import { ENV } from "../../../shared/config/env";
 
-const JWT_SECRET = ENV.JWT_SECRET;
+const JWT_SECRET: Secret = ENV.JWT_SECRET;
 const FRONTEND_URL = ENV.FRONTEND_ORIGIN;
 const JWT_EXPIRES_IN = ENV.JWT_EXPIRES_IN;
 const REFRESH_TOKEN_EXPIRES_IN = "7d";
@@ -46,12 +46,15 @@ export const loginUser = async (email: string, password: string) => {
   }
 
   const payload = {
-    id: user._id,
+    id: String(user._id),
     email: user.email,
     role: user.role,
   };
 
-  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  const signOptions: SignOptions = {
+    expiresIn: JWT_EXPIRES_IN as SignOptions["expiresIn"],
+  };
+  const token = jwt.sign(payload, JWT_SECRET, signOptions);
   return token;
 };
 
@@ -61,6 +64,9 @@ export const refreshAccessToken = async (
   try {
     const decoded = jwt.verify(refreshToken, JWT_SECRET) as TokenPayload;
 
+    const refreshSign: SignOptions = {
+      expiresIn: "1h" as SignOptions["expiresIn"],
+    };
     const newToken = jwt.sign(
       {
         id: decoded.id,
@@ -68,7 +74,7 @@ export const refreshAccessToken = async (
         role: decoded.role,
       },
       JWT_SECRET,
-      { expiresIn: "1h" }
+      refreshSign
     );
     return newToken;
   } catch (error) {
@@ -80,17 +86,16 @@ export const generateResetToken = async (email: string) => {
   const user = await User.findOne({ email });
   if (!user) throw new Error("Usuario no encontrado");
 
-  const resetToken = jwt.sign({ id: user._id }, JWT_SECRET, {
-    expiresIn: "6h",
-  });
+  const resetSign: SignOptions = { expiresIn: "6h" as SignOptions["expiresIn"] };
+  const resetToken = jwt.sign({ id: String(user._id) }, JWT_SECRET, resetSign);
   user.resetPasswordToken = resetToken;
   user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
   await user.save();
   return resetToken;
 };
 
-export const resetPassword = async (token: any, newPassword: string) => {
-  const decoded: any = jwt.verify(token, JWT_SECRET);
+export const resetPassword = async (token: string, newPassword: string) => {
+  const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
   const user = await User.findById(decoded.id);
   if (!user || !user.resetPasswordExpires) {
     throw new Error("Token inválido o expirado");
@@ -121,9 +126,10 @@ export const requestPasswordReset = async (email: string) => {
   const user = await User.findOne({ email });
   if (!user) return;
 
-  const resetToken = jwt.sign({ id: user._id }, JWT_SECRET, {
-    expiresIn: "15m",
-  });
+  const resetSign15: SignOptions = {
+    expiresIn: "15m" as SignOptions["expiresIn"],
+  };
+  const resetToken = jwt.sign({ id: String(user._id) }, JWT_SECRET, resetSign15);
 
   user.resetPasswordToken = resetToken;
   user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);

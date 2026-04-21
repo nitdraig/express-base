@@ -6,13 +6,14 @@ import { pushNotificationService } from "../../../shared/services/pushNotificati
 
 export const googleOAuthController = {
   // Get authorization URL
-  getAuthUrl: async (req: Request, res: Response) => {
+  getAuthUrl: async (req: Request, res: Response): Promise<void> => {
     try {
       if (!googleOAuthService.isConfigured()) {
-        return res.status(503).json({
+        res.status(503).json({
           success: false,
           error: "Google OAuth is not configured",
         });
+        return;
       }
 
       const state = req.query.state as string;
@@ -35,50 +36,47 @@ export const googleOAuthController = {
   },
 
   // Handle OAuth callback
-  handleCallback: async (req: Request, res: Response) => {
+  handleCallback: async (req: Request, res: Response): Promise<void> => {
     try {
       const { code, state, error } = req.query;
 
       if (error) {
         logError("Error in OAuth callback:", { error, state });
-        return res.redirect(
+        res.redirect(
           `${process.env.FRONTEND_ORIGIN}/auth/error?error=${error}`
         );
+        return;
       }
 
       if (!code) {
-        return res.redirect(
+        res.redirect(
           `${process.env.FRONTEND_ORIGIN}/auth/error?error=no_code`
         );
+        return;
       }
 
-      // Exchange code for tokens
       const tokens = await googleOAuthService.exchangeCodeForTokens(
         code as string
       );
 
-      // Get user information
       const googleUser = await googleOAuthService.getUserInfo(
         tokens.accessToken
       );
 
-      // Crear o actualizar usuario
       const user =
         await googleOAuthService.createOrUpdateUserFromGoogle(googleUser);
 
-      // Generar JWT
       const jwtToken = generateJWT({
-        id: user._id as string,
+        id: user.id,
         email: user.email,
         role: user.role,
       });
 
-      // Send welcome notification if new user
       if (user.pushSubscriptions && user.pushSubscriptions.length > 0) {
         try {
           const welcomeNotification =
             pushNotificationService.createNotification("welcome", {
-              userId: user._id,
+              userId: user.id,
             });
 
           await pushNotificationService.sendNotificationToMany(
@@ -92,10 +90,9 @@ export const googleOAuthController = {
 
       logInfo("User authenticated successfully with Google", {
         email: user.email,
-        userId: user._id as string,
+        userId: user.id,
       });
 
-      // Redirect to frontend with token
       res.redirect(
         `${process.env.FRONTEND_ORIGIN}/auth/success?token=${jwtToken}&state=${state || "default"}`
       );
@@ -108,34 +105,32 @@ export const googleOAuthController = {
   },
 
   // Verify ID token (for frontend authentication)
-  verifyIdToken: async (req: Request, res: Response) => {
+  verifyIdToken: async (req: Request, res: Response): Promise<void> => {
     try {
       const { idToken } = req.body;
 
       if (!googleOAuthService.isConfigured()) {
-        return res.status(503).json({
+        res.status(503).json({
           success: false,
           error: "Google OAuth is not configured",
         });
+        return;
       }
 
-      // Verify ID token
       const googleUser = await googleOAuthService.verifyIdToken(idToken);
 
-      // Create or update user
       const user =
         await googleOAuthService.createOrUpdateUserFromGoogle(googleUser);
 
-      // Generate JWT
       const jwtToken = generateJWT({
-        id: user._id as string,
+        id: user.id,
         email: user.email,
         role: user.role,
       });
 
       logInfo("User authenticated successfully with Google ID Token", {
         email: user.email,
-        userId: user._id,
+        userId: user.id,
       });
 
       res.json({
@@ -143,7 +138,7 @@ export const googleOAuthController = {
         data: {
           token: jwtToken,
           user: {
-            id: user._id as string,
+            id: user.id,
             email: user.email,
             name: user.name,
             role: user.role,
@@ -162,15 +157,16 @@ export const googleOAuthController = {
   },
 
   // Refresh access token
-  refreshToken: async (req: Request, res: Response) => {
+  refreshToken: async (req: Request, res: Response): Promise<void> => {
     try {
       const { refreshToken } = req.body;
 
       if (!googleOAuthService.isConfigured()) {
-        return res.status(503).json({
+        res.status(503).json({
           success: false,
           error: "Google OAuth is not configured",
         });
+        return;
       }
 
       const tokens = await googleOAuthService.refreshAccessToken(refreshToken);
@@ -195,23 +191,23 @@ export const googleOAuthController = {
   },
 
   // Revoke tokens
-  revokeTokens: async (req: Request, res: Response) => {
+  revokeTokens: async (req: Request, res: Response): Promise<void> => {
     try {
       const { accessToken } = req.body;
-      const user = (req as any).user;
+      const user = req.user;
 
       if (!googleOAuthService.isConfigured()) {
-        return res.status(503).json({
+        res.status(503).json({
           success: false,
           error: "Google OAuth is not configured",
         });
+        return;
       }
 
       if (accessToken) {
         await googleOAuthService.revokeTokens(accessToken);
       }
 
-      // Clear user's googleId
       if (user) {
         const { User } = await import("../../users/models/userModel");
         await User.findByIdAndUpdate(user.id, {

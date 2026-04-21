@@ -4,14 +4,14 @@ import { User } from "../../users/models/userModel";
 import { logInfo, logError } from "../../../shared/utils/logger";
 
 export const pushNotificationController = {
-  // Obtener VAPID public key
-  getVapidPublicKey: async (req: Request, res: Response) => {
+  getVapidPublicKey: async (req: Request, res: Response): Promise<void> => {
     try {
       if (!pushNotificationService.isConfigured()) {
-        return res.status(503).json({
+        res.status(503).json({
           success: false,
           error: "Servicio de notificaciones push no configurado",
         });
+        return;
       }
 
       const publicKey = pushNotificationService.getVapidPublicKey();
@@ -31,43 +31,47 @@ export const pushNotificationController = {
     }
   },
 
-  // Suscribir usuario a notificaciones push
-  subscribe: async (req: Request, res: Response) => {
+  subscribe: async (req: Request, res: Response): Promise<void> => {
     try {
       const { subscription } = req.body;
-      const user = (req as any).user;
+      const user = req.user;
+
+      if (!user) {
+        res.status(401).json({ success: false, error: "No autenticado" });
+        return;
+      }
 
       if (!pushNotificationService.isConfigured()) {
-        return res.status(503).json({
+        res.status(503).json({
           success: false,
           error: "Servicio de notificaciones push no configurado",
         });
+        return;
       }
 
-      // Validar suscripción
       const isValid =
         await pushNotificationService.validateSubscription(subscription);
       if (!isValid) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           error: "Suscripción push inválida",
         });
+        return;
       }
 
-      // Verificar si la suscripción ya existe
       const existingUser = await User.findById(user.id);
       const subscriptionExists = existingUser?.pushSubscriptions?.some(
         (sub) => sub.endpoint === subscription.endpoint
       );
 
       if (subscriptionExists) {
-        return res.json({
+        res.json({
           success: true,
           message: "Suscripción ya existe",
         });
+        return;
       }
 
-      // Agregar suscripción al usuario
       await User.findByIdAndUpdate(user.id, {
         $push: { pushSubscriptions: subscription },
       });
@@ -90,11 +94,15 @@ export const pushNotificationController = {
     }
   },
 
-  // Desuscribir usuario de notificaciones push
-  unsubscribe: async (req: Request, res: Response) => {
+  unsubscribe: async (req: Request, res: Response): Promise<void> => {
     try {
       const { endpoint } = req.body;
-      const user = (req as any).user;
+      const user = req.user;
+
+      if (!user) {
+        res.status(401).json({ success: false, error: "No autenticado" });
+        return;
+      }
 
       await User.findByIdAndUpdate(user.id, {
         $pull: { pushSubscriptions: { endpoint } },
@@ -118,17 +126,22 @@ export const pushNotificationController = {
     }
   },
 
-  // Enviar notificación de prueba
-  sendTestNotification: async (req: Request, res: Response) => {
+  sendTestNotification: async (req: Request, res: Response): Promise<void> => {
     try {
       const { title, body } = req.body;
-      const user = (req as any).user;
+      const user = req.user;
+
+      if (!user) {
+        res.status(401).json({ success: false, error: "No autenticado" });
+        return;
+      }
 
       if (!pushNotificationService.isConfigured()) {
-        return res.status(503).json({
+        res.status(503).json({
           success: false,
           error: "Servicio de notificaciones push no configurado",
         });
+        return;
       }
 
       const userDoc = await User.findById(user.id);
@@ -136,10 +149,11 @@ export const pushNotificationController = {
         !userDoc?.pushSubscriptions ||
         userDoc.pushSubscriptions.length === 0
       ) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           error: "No tienes suscripciones push activas",
         });
+        return;
       }
 
       const notification = pushNotificationService.createNotification(
@@ -176,25 +190,30 @@ export const pushNotificationController = {
     }
   },
 
-  // Enviar notificación a todos los usuarios (solo admin)
-  sendToAllUsers: async (req: Request, res: Response) => {
+  sendToAllUsers: async (req: Request, res: Response): Promise<void> => {
     try {
       const { title, body } = req.body;
-      const user = (req as any).user;
+      const user = req.user;
 
-      // Verificar permisos de admin
+      if (!user) {
+        res.status(401).json({ success: false, error: "No autenticado" });
+        return;
+      }
+
       if (!["admin", "superAdmin"].includes(user.role)) {
-        return res.status(403).json({
+        res.status(403).json({
           success: false,
           error: "No tienes permisos para enviar notificaciones masivas",
         });
+        return;
       }
 
       if (!pushNotificationService.isConfigured()) {
-        return res.status(503).json({
+        res.status(503).json({
           success: false,
           error: "Servicio de notificaciones push no configurado",
         });
+        return;
       }
 
       const notification = pushNotificationService.createNotification(
@@ -229,25 +248,30 @@ export const pushNotificationController = {
     }
   },
 
-  // Enviar notificación a usuarios por rol (solo admin)
-  sendToRole: async (req: Request, res: Response) => {
+  sendToRole: async (req: Request, res: Response): Promise<void> => {
     try {
       const { role, title, body } = req.body;
-      const user = (req as any).user;
+      const user = req.user;
 
-      // Verificar permisos de admin
+      if (!user) {
+        res.status(401).json({ success: false, error: "No autenticado" });
+        return;
+      }
+
       if (!["admin", "superAdmin"].includes(user.role)) {
-        return res.status(403).json({
+        res.status(403).json({
           success: false,
           error: "No tienes permisos para enviar notificaciones masivas",
         });
+        return;
       }
 
       if (!pushNotificationService.isConfigured()) {
-        return res.status(503).json({
+        res.status(503).json({
           success: false,
           error: "Servicio de notificaciones push no configurado",
         });
+        return;
       }
 
       const notification = pushNotificationService.createNotification(

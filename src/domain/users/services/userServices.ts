@@ -43,8 +43,14 @@ export const changeUserPassword = async (
     throw new Error("Usuario no encontrado");
   }
 
+  if (!user.password) {
+    throw new Error("El usuario no tiene contraseña configurada");
+  }
+
+  const storedPassword = user.password;
+
   // Verificar contraseña actual
-  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  const isMatch = await bcrypt.compare(currentPassword, storedPassword);
   if (!isMatch) {
     throw new Error("Contraseña actual incorrecta");
   }
@@ -58,7 +64,7 @@ export const changeUserPassword = async (
   }
 
   // Verificar que la nueva contraseña no sea igual a la actual
-  const isSamePassword = await bcrypt.compare(newPassword, user.password);
+  const isSamePassword = await bcrypt.compare(newPassword, storedPassword);
   if (isSamePassword) {
     throw new Error("La nueva contraseña no puede ser igual a la actual");
   }
@@ -77,7 +83,7 @@ export const changeUserPassword = async (
 
   return user;
 };
-export const deleteUser = async (userId: string): Promise<any> => {
+export const deleteUser = async (userId: string): Promise<IUser | null> => {
   const user = await User.findById(userId);
   if (!user) {
     throw new Error("Usuario no encontrado");

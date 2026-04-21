@@ -43,7 +43,7 @@ export const initializeSocket = (httpServer: HTTPServer): SocketIOServer => {
 
       // Add user information to socket
       socket.data.user = {
-        userId: user._id.toString(),
+        userId: user.id,
         socketId: socket.id,
         email: user.email,
         role: user.role,
@@ -51,7 +51,7 @@ export const initializeSocket = (httpServer: HTTPServer): SocketIOServer => {
       };
 
       logInfo("User authenticated in Socket.io", {
-        userId: user._id.toString(),
+        userId: user.id,
         email: user.email,
         socketId: socket.id,
       });

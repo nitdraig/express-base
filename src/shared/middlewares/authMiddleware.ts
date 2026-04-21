@@ -2,18 +2,6 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyJWT } from "../utils/jwtUtils";
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: string;
-        email: string;
-        role: string;
-      };
-    }
-  }
-}
-
 export const authenticate = (
   req: Request,
   res: Response,

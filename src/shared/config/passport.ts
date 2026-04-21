@@ -1,24 +1,26 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { Strategy as FacebookStrategy } from "passport-facebook";
-import { Strategy as GitHubStrategy } from "passport-github2";
+import {
+  Strategy as GitHubStrategy,
+  type Profile as GitHubProfile,
+} from "passport-github2";
 import { ENV } from "./env";
 import { oauthService } from "../services/oauthService";
-import { generateJWT } from "../utils/jwtUtils";
 import { logInfo, logError } from "../utils/logger";
 import { User } from "../../domain/users/models/userModel";
 
 // User serialization for sessions (if you use them)
-passport.serializeUser((user: any, done) => {
+passport.serializeUser((user: Express.User, done) => {
   done(null, user.id);
 });
 
 passport.deserializeUser(async (id: string, done) => {
   try {
     const user = await User.findById(id);
-    done(null, user);
+    done(null, user ?? false);
   } catch (error) {
-    done(error, null);
+    done(error, false);
   }
 });
 
@@ -58,7 +60,7 @@ if (ENV.GOOGLE_CLIENT_ID && ENV.GOOGLE_CLIENT_SECRET) {
           return done(null, user);
         } catch (error) {
           logError("Error in Google strategy:", error);
-          return done(error, null);
+          return done(error, false);
         }
       }
     )
@@ -101,7 +103,7 @@ if (ENV.FACEBOOK_APP_ID && ENV.FACEBOOK_APP_SECRET) {
           return done(null, user);
         } catch (error) {
           logError("Error in Facebook strategy:", error);
-          return done(error, null);
+          return done(error, false);
         }
       }
     )
@@ -118,7 +120,16 @@ if (ENV.GITHUB_CLIENT_ID && ENV.GITHUB_CLIENT_SECRET) {
         callbackURL: `${ENV.API_URL}/auth/oauth/github/callback`,
         scope: ["user:email"],
       },
-      async (accessToken, refreshToken, profile, done) => {
+      async (
+        accessToken: string,
+        refreshToken: string,
+        profile: GitHubProfile,
+        done: (
+          err: Error | null | unknown,
+          user?: Express.User | false,
+          info?: object
+        ) => void
+      ) => {
         try {
           // GitHub may not provide email in public profile
           // We need to get it from the API if not available
@@ -135,8 +146,11 @@ if (ENV.GITHUB_CLIENT_ID && ENV.GITHUB_CLIENT_SECRET) {
               });
 
               if (emailResponse.ok) {
-                const emails = await emailResponse.json();
-                const primaryEmail = emails.find((e: any) => e.primary);
+                const emails = (await emailResponse.json()) as Array<{
+                  email: string;
+                  primary?: boolean;
+                }>;
+                const primaryEmail = emails.find((e) => e.primary);
                 email = primaryEmail?.email || emails[0]?.email || "";
               } else {
                 email = `${profile.username}@users.noreply.github.com`;
@@ -169,7 +183,7 @@ if (ENV.GITHUB_CLIENT_ID && ENV.GITHUB_CLIENT_SECRET) {
           return done(null, user);
         } catch (error) {
           logError("Error in GitHub strategy:", error);
-          return done(error, null);
+          return done(error, false);
         }
       }
     )

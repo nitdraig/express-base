@@ -1,13 +1,14 @@
-import { Request } from "express";
+import { Request, Response, NextFunction } from "express";
+import type { FilterQuery, Model } from "mongoose";
 
 // Tipos para filtros y búsqueda
 export interface SearchFilters {
   search?: string;
   sort?: string;
   order?: "asc" | "desc";
-  page?: number;
-  limit?: number;
-  filters?: Record<string, any>;
+  page: number;
+  limit: number;
+  filters?: Record<string, string | number | boolean>;
   dateRange?: {
     start?: Date;
     end?: Date;
@@ -45,9 +46,9 @@ export const extractSearchFilters = (req: Request): SearchFilters => {
     search: search as string,
     sort: sort as string,
     order: order as "asc" | "desc",
-    page: parseInt(page as string) || 1,
-    limit: parseInt(limit as string) || 10,
-    filters: filters as Record<string, any>,
+    page: parseInt(String(page), 10) || 1,
+    limit: parseInt(String(limit), 10) || 10,
+    filters: filters as Record<string, string | number | boolean>,
   };
 
   // Agregar rango de fechas si se proporciona
@@ -63,8 +64,10 @@ export const extractSearchFilters = (req: Request): SearchFilters => {
 };
 
 // Construir query de MongoDB
-export const buildMongoQuery = (filters: SearchFilters) => {
-  const query: any = {};
+export const buildMongoQuery = (
+  filters: SearchFilters
+): Record<string, unknown> => {
+  const query: Record<string, unknown> = {};
 
   // Búsqueda de texto
   if (filters.search) {
@@ -82,7 +85,7 @@ export const buildMongoQuery = (filters: SearchFilters) => {
 
   // Rango de fechas
   if (filters.dateRange) {
-    const dateQuery: any = {};
+    const dateQuery: Record<string, Date> = {};
     const field = filters.dateRange.field || "createdAt";
 
     if (filters.dateRange.start) {
@@ -101,8 +104,10 @@ export const buildMongoQuery = (filters: SearchFilters) => {
 };
 
 // Construir opciones de sort
-export const buildSortOptions = (filters: SearchFilters) => {
-  const sortOptions: any = {};
+export const buildSortOptions = (
+  filters: SearchFilters
+): Record<string, 1 | -1> => {
+  const sortOptions: Record<string, 1 | -1> = {};
 
   if (filters.sort) {
     sortOptions[filters.sort] = filters.order === "asc" ? 1 : -1;
@@ -115,35 +120,35 @@ export const buildSortOptions = (filters: SearchFilters) => {
 
 // Aplicar paginación
 export const applyPagination = async <T>(
-  query: any,
-  model: any,
+  query: Record<string, unknown>,
+  model: Model<T>,
   filters: SearchFilters
 ): Promise<PaginationResult<T>> => {
-  const skip = (filters.page - 1) * filters.limit;
-  const limit = filters.limit;
+  const { page, limit } = filters;
+  const skip = (page - 1) * limit;
+  const mongoQuery = query as FilterQuery<T>;
 
-  // Ejecutar queries en paralelo
   const [data, total] = await Promise.all([
     model
-      .find(query)
+      .find(mongoQuery)
       .sort(buildSortOptions(filters))
       .skip(skip)
       .limit(limit)
       .lean(),
-    model.countDocuments(query),
+    model.countDocuments(mongoQuery),
   ]);
 
   const totalPages = Math.ceil(total / limit);
 
   return {
-    data,
+    data: data as T[],
     pagination: {
-      page: filters.page,
+      page,
       limit,
       total,
       totalPages,
-      hasNext: filters.page < totalPages,
-      hasPrev: filters.page > 1,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
     },
   };
 };
@@ -170,7 +175,7 @@ export const createPaginatedResponse = <T>(
     // Agregar filtros adicionales
     if (filters.filters) {
       Object.entries(filters.filters).forEach(([key, value]) => {
-        url.searchParams.set(key, value.toString());
+        url.searchParams.set(key, String(value));
       });
     }
 
@@ -211,14 +216,14 @@ export const searchUtils = {
 
   // Búsqueda por rango numérico
   numericRange: (field: string, min?: number, max?: number) => {
-    const rangeQuery: any = {};
+    const rangeQuery: Record<string, number> = {};
     if (min !== undefined) rangeQuery.$gte = min;
     if (max !== undefined) rangeQuery.$lte = max;
     return { [field]: rangeQuery };
   },
 
   // Búsqueda por array
-  arrayContains: (field: string, values: any[]) => {
+  arrayContains: (field: string, values: unknown[]) => {
     return { [field]: { $in: values } };
   },
 
@@ -234,46 +239,51 @@ export const searchUtils = {
 };
 
 // Middleware para validar filtros
-export const validateSearchFilters = (req: Request, res: any, next: any) => {
+export const validateSearchFilters = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
   const filters = extractSearchFilters(req);
 
-  // Validar página
   if (filters.page < 1) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       error: "La página debe ser mayor a 0",
     });
+    return;
   }
 
-  // Validar límite
   if (filters.limit < 1 || filters.limit > 100) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       error: "El límite debe estar entre 1 y 100",
     });
+    return;
   }
 
-  // Validar orden
   if (filters.order && !["asc", "desc"].includes(filters.order)) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       error: 'El orden debe ser "asc" o "desc"',
     });
+    return;
   }
 
-  // Validar fechas
   if (filters.dateRange) {
     if (filters.dateRange.start && isNaN(filters.dateRange.start.getTime())) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: "Fecha de inicio inválida",
       });
+      return;
     }
     if (filters.dateRange.end && isNaN(filters.dateRange.end.getTime())) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         error: "Fecha de fin inválida",
       });
+      return;
     }
   }
 
