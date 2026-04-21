@@ -9,6 +9,11 @@ for (const envVar of requiredEnvVars) {
   }
 }
 
+const readPositiveInt = (raw: string | undefined, fallback: number): number => {
+  const v = parseInt(raw ?? "", 10);
+  return Number.isFinite(v) && v > 0 ? v : fallback;
+};
+
 export const ENV = {
   NODE_ENV: process.env.NODE_ENV ?? "development",
   PORT: parseInt(process.env.PORT ?? "5000", 10),
@@ -72,4 +77,18 @@ export const ENV = {
 
   // Sentry (opcional)
   SENTRY_DSN: process.env.SENTRY_DSN,
+
+  // Health & Business Pulse (opcional). Si `PULSE_BEARER_TOKEN` no está definido, la ruta no se monta.
+  PULSE_BEARER_TOKEN: process.env.PULSE_BEARER_TOKEN,
+  PULSE_PRODUCT_NAME: process.env.PULSE_PRODUCT_NAME ?? "express-base",
+  PULSE_AI_CONTEXT: process.env.PULSE_AI_CONTEXT ?? "",
+  PULSE_BUSINESS_METRICS_JSON: process.env.PULSE_BUSINESS_METRICS_JSON,
+  PULSE_PROBE_TIMEOUT_MS: readPositiveInt(
+    process.env.PULSE_PROBE_TIMEOUT_MS,
+    150
+  ),
+  PULSE_COLLECTION_TIMEOUT_MS: readPositiveInt(
+    process.env.PULSE_COLLECTION_TIMEOUT_MS,
+    300
+  ),
 } as const;

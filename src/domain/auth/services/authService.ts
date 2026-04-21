@@ -36,6 +36,10 @@ export const loginUser = async (email: string, password: string) => {
     );
   }
 
+  if (!user.password) {
+    throw new AppError("Credenciales incorrectas. Intente nuevamente.", 401);
+  }
+
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
     throw new AppError("Credenciales incorrectas. Intente nuevamente.", 401);

@@ -14,6 +14,7 @@ This repository provides a solid foundation for building backend applications wi
 - [Usage Guide](#usage-guide)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
+- [Health & Business Pulse (design doc, Spanish)](docs/health-business-pulse.md)
 
 ---
 
