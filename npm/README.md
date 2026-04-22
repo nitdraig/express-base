@@ -1,15 +1,15 @@
-# Paquetes npm (monorepo)
+# npm packages (monorepo)
 
-Este directorio contiene paquetes publicables de forma **independiente** del código de `src/` de la plantilla Express.
+This directory holds packages that can be published **independently** from the main Express template under `src/`.
 
-| Paquete | Descripción |
-|---------|-------------|
-| [`express-business-pulse`](./express-business-pulse/) | Health & Business Pulse: `collectPulse`, router Express con Bearer, probes Mongo por defecto. |
+| Package | Description |
+|---------|---------------|
+| [`excelso-pulse-express`](./excelso-pulse-express/) | Health & Business Pulse: `collectPulse`, Express router with Bearer auth, MongoDB probes by default. |
 
-Instalación desde el repo (desarrollo):
+Local development:
 
 ```bash
-cd npm/express-business-pulse && npm install && npm run build
+cd npm/excelso-pulse-express && npm install && npm run build
 ```
 
-Publicación: ver `express-business-pulse/PUBLISH.md`.
+Publishing: see `excelso-pulse-express/PUBLISH.md`.

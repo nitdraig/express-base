@@ -1,35 +1,37 @@
-# express-business-pulse
+# excelso-pulse-express
 
-**Health & Business Pulse** para aplicaciones **Express** (y reutilizable en **Next.js** u otros runtimes vía `collectPulse`).
+> **Español:** [README.es.md](./README.es.md)
 
-- JSON estable (`pulse_version: "1"`), métricas técnicas, KPIs de negocio opcionales, texto `ai_context`, infraestructura con probes enchufables.
-- Protección **`Authorization: Bearer`** (comparación resistente a timing).
-- Probe por defecto **MongoDB** (`ping` + manejo de estados transitorios).
-- Router opcional con **rate limit** por IP.
+**Health & Business Pulse** for **Express** apps (and reusable from **Next.js** or other runtimes via `collectPulse`).
 
-## Instalación
+- Stable JSON (`pulse_version: "1"`), technical metrics, optional business KPIs, `ai_context` text, pluggable infrastructure probes.
+- **`Authorization: Bearer`** protection (timing-safe comparison).
+- Default **MongoDB** probe (`ping` + transient state handling).
+- Optional Express router with per-IP **rate limiting**.
+
+## Install
 
 ```bash
-npm install express-business-pulse express mongoose
+npm install excelso-pulse-express express mongoose
 ```
 
-(`mongoose` es *peer* requerido si usas los probes por defecto; puedes sustituir `getProbes` y no depender de Mongoose.)
+`mongoose` is a **peer dependency** if you use the default probes; supply `getProbes` / `probes` to avoid it.
 
-## Express: montar el endpoint
+## Express: mount the endpoint
 
 ```ts
 import express from "express";
-import { createPulseExpressRouter } from "express-business-pulse";
+import { createPulseExpressRouter } from "excelso-pulse-express";
 
 const app = express();
 
 const pulse = createPulseExpressRouter({
   bearerToken: process.env.PULSE_BEARER_TOKEN,
-  productName: process.env.PULSE_PRODUCT_NAME ?? "mi-app",
+  productName: process.env.PULSE_PRODUCT_NAME ?? "my-app",
   environment: process.env.NODE_ENV,
   aiContext: process.env.PULSE_AI_CONTEXT ?? "",
   businessMetricsJson: process.env.PULSE_BUSINESS_METRICS_JSON,
-  relativePath: "pulse", // GET /internal/pulse
+  relativePath: "pulse", // GET /internal/pulse when mounted below
 });
 
 if (pulse) {
@@ -37,12 +39,12 @@ if (pulse) {
 }
 ```
 
-Sin `bearerToken` válido, `createPulseExpressRouter` devuelve **`null`** (no se expone ruta).
+If `bearerToken` is missing or empty, `createPulseExpressRouter` returns **`null`** (no route is exposed).
 
-## Next.js / agregador (solo datos)
+## Next.js / aggregator (data only)
 
 ```ts
-import { collectPulse } from "express-business-pulse";
+import { collectPulse } from "excelso-pulse-express";
 
 export async function GET() {
   const body = await collectPulse({
@@ -53,22 +55,22 @@ export async function GET() {
 }
 ```
 
-(Ajusta auth: este ejemplo no incluye Bearer; en producción protege la ruta con tu propia capa.)
+Add your own auth in production; this sample does not enforce Bearer on the Route Handler.
 
-## API exportada
+## Public API
 
-| Export | Uso |
-|--------|-----|
-| `createPulseExpressRouter` | Router Express listo. |
-| `collectPulse` | Construir el JSON sin Express. |
-| `createPulseBearerAuthMiddleware` | Solo auth Bearer sobre rutas propias. |
-| `getDefaultPulseProbes`, `createMongooseDatabaseProbe` | Extender infraestructura. |
-| Tipos (`PulsePayload`, `PulseProbe`, …) | Contrato TypeScript. |
+| Export | Purpose |
+|--------|---------|
+| `createPulseExpressRouter` | Ready-to-mount Express `Router`. |
+| `collectPulse` | Build the payload without Express. |
+| `createPulseBearerAuthMiddleware` | Bearer-only middleware for custom routes. |
+| `getDefaultPulseProbes`, `createMongooseDatabaseProbe` | Extend infrastructure checks. |
+| Types (`PulsePayload`, `PulseProbe`, …) | TypeScript contract. |
 
-## Variables de entorno (referencia)
+## Configuration hints
 
-Las mismas ideas que en la plantilla `express-base`: token largo, JSON de negocio en una línea, timeouts opcionales (`probeTimeoutMs`, `collectionTimeoutMs` en opciones de código o env leído por tu app).
+Use a long random service token for `bearerToken` (from env). Business metrics: pass JSON as a string in `businessMetricsJson` or set it from env in your app. Tune `probeTimeoutMs` / `collectionTimeoutMs` if probes are slow.
 
-## Licencia
+## License
 
-ISC — ver `LICENSE`.
+ISC — see `LICENSE`.

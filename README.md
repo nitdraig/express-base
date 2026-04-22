@@ -15,7 +15,7 @@ This repository provides a solid foundation for building backend applications wi
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [Health & Business Pulse (design doc, Spanish)](docs/health-business-pulse.md)
-- [express-business-pulse (npm package)](npm/express-business-pulse/README.md)
+- [excelso-pulse-express (npm package)](npm/excelso-pulse-express/README.md)
 
 ---
 

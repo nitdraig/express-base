@@ -3,15 +3,15 @@
 ## Antes del primer publish
 
 1. Edita `package.json`:
-   - `"name"`: global único en npm (p. ej. `@tu-org/express-business-pulse` con scope).
-   - `"repository"`: URL real del monorepo y `directory: "npm/express-business-pulse"`.
+   - `"name"`: nombre único en npm (p. ej. `@tu-org/excelso-pulse-express` con scope).
+   - `"repository"`: URL real del monorepo y `directory: "npm/excelso-pulse-express"`.
    - `"author"`, `"version"` (`0.1.0` → semver al publicar fixes).
 2. Cuenta npm y **2FA** recomendada.
 
 ## Compilar y comprobar
 
 ```bash
-cd npm/express-business-pulse
+cd npm/excelso-pulse-express
 npm install
 npm run build
 ```
@@ -37,7 +37,7 @@ En otro proyecto:
 
 ```json
 "dependencies": {
-  "express-business-pulse": "file:../express-base/npm/express-business-pulse"
+  "excelso-pulse-express": "file:../express-base/npm/excelso-pulse-express"
 }
 ```
 
