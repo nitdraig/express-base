@@ -58,4 +58,17 @@ describe("derivePulseStatus", () => {
     ];
     expect(derivePulseStatus(infra)).toBe("degraded");
   });
+
+  it("returns degraded when database is degraded (e.g. connecting), not down", () => {
+    const infra: InfrastructureItem[] = [
+      {
+        id: "mongodb",
+        name: "MongoDB",
+        kind: "database",
+        status: "degraded",
+        detail: "connecting",
+      },
+    ];
+    expect(derivePulseStatus(infra)).toBe("degraded");
+  });
 });
