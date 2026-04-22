@@ -1,5 +1,5 @@
 {
-  "name": "express-business-pulse",
+  "name": "excelso-pulse-express",
   "version": "0.1.0",
   "description": "Health & Business Pulse for Express: protected JSON pulse, pluggable probes (MongoDB by default).",
   "license": "ISC",
@@ -7,7 +7,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/your-org/express-base.git",
-    "directory": "npm/express-business-pulse"
+    "directory": "npm/excelso-pulse-express"
   },
   "keywords": [
     "express",
